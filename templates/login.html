@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logg inn — Middagsklubben</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>" />
+  <script>
+    (function() {
+      if (localStorage.getItem('theme') === 'dark')
+        document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">🍷</div>
+      <h1>Middagsklubben</h1>
+      <p class="login-sub">Logg inn for å fortsette</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('login', next=request.args.get('next', '')) }}">
+        <div class="login-field">
+          <label for="password">Passord</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Klubbpassordet..."
+            autofocus
+            autocomplete="current-password"
+            required
+          />
+        </div>
+        <button type="submit" class="login-btn">Logg inn</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

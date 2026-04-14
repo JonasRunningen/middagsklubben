@@ -32,6 +32,9 @@
       </nav>
       <button class="funny-btn" id="funnyBtn" title="🌭" onclick="polseRegn()">🌭</button>
       <button class="dark-toggle" id="darkToggle" title="Bytt tema" onclick="toggleDark()">🌙</button>
+      <a href="{{ url_for('logg_ut') }}" class="logout-btn" title="Logg ut">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </a>
       <button class="hamburger" onclick="document.querySelector('.mobile-nav').classList.toggle('open')">☰</button>
     </div>
     <nav class="mobile-nav">

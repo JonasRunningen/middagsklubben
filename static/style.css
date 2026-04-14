@@ -350,3 +350,62 @@ select.input { cursor: pointer; }
   .form-row-3 .form-group { min-width: 100%; }
   .page-header { flex-direction: column; }
 }
+
+/* ── Login ── */
+.login-wrap {
+  min-height: 100vh; display: flex;
+  align-items: center; justify-content: center;
+  background: var(--bg); padding: 20px;
+}
+.login-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 48px 40px;
+  width: 100%; max-width: 380px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  text-align: center;
+}
+.login-logo { font-size: 3rem; margin-bottom: 12px; }
+.login-card h1 {
+  font-family: var(--font); font-size: 1.6rem;
+  color: var(--text); margin-bottom: 6px;
+}
+.login-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+.login-field { text-align: left; margin-bottom: 16px; }
+.login-field label {
+  display: block; font-size: 0.82rem; font-weight: 600;
+  color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.05em; margin-bottom: 6px;
+}
+.login-field input {
+  width: 100%; padding: 11px 14px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); color: var(--text);
+  font-size: 0.95rem; font-family: inherit;
+  transition: border-color 0.15s;
+}
+.login-field input:focus {
+  outline: none; border-color: var(--accent);
+}
+.login-btn {
+  width: 100%; padding: 12px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  transition: filter 0.15s, transform 0.15s;
+  margin-top: 4px;
+}
+.login-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+/* ── Logout btn ── */
+.logout-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+  background: none; border: 1px solid var(--border);
+  border-radius: 6px; color: var(--muted);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.logout-btn:hover {
+  background: rgba(139,32,48,0.08); color: var(--accent);
+  border-color: var(--accent); text-decoration: none;
+}

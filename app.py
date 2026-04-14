@@ -3,11 +3,19 @@ import uuid
 import json
 import base64
 from datetime import date
+from functools import wraps
 from flask import (Flask, render_template, request, redirect,
-                   url_for, flash, abort, jsonify)
+                   url_for, flash, abort, jsonify, session)
 from werkzeug.utils import secure_filename
 from sqlalchemy import func
 from models import db, Member, Dinner, Drink, Score, Photo, Quote, Recipe, Award, HostDebt
+
+# Load .env if present
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -21,11 +29,53 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(BASE_DIR, "mid
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH']    = 16 * 1024 * 1024   # 16 MB
 
+CLUB_PASSWORD = os.environ.get('CLUB_PASSWORD', 'middag2026')
+
 db.init_app(app)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 with app.app_context():
     db.create_all()
+
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login', next=request.path))
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if session.get('logged_in'):
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        if password == CLUB_PASSWORD:
+            session['logged_in'] = True
+            session.permanent = True
+            next_url = request.args.get('next') or url_for('index')
+            return redirect(next_url)
+        flash('Feil passord. Prøv igjen.', 'error')
+    return render_template('login.html')
+
+
+@app.route('/logg_ut')
+def logg_ut():
+    session.clear()
+    flash('Du er nå logget ut.', 'success')
+    return redirect(url_for('login'))
+
+
+@app.before_request
+def require_login():
+    public = {'login', 'static'}
+    if request.endpoint not in public and not session.get('logged_in'):
+        return redirect(url_for('login', next=request.path))
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
