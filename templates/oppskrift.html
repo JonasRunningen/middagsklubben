@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Oppskrift – {{ dinner.date.strftime('%d. %b %Y') }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">
+      <a href="{{ url_for('kveld', dinner_id=dinner.id) }}">← Tilbake til kvelden</a>
+    </div>
+    <h1>{{ course_label }}</h1>
+    <p class="page-sub">{{ dinner.host.name if dinner.host else '' }}s kveld · {{ dinner.date.strftime('%d. %b %Y') }}</p>
+  </div>
+</div>
+
+<form method="post" class="form-card" style="max-width:680px">
+  <div class="form-group">
+    <label>Navn på retten</label>
+    <input type="text" name="title" class="input"
+           value="{{ recipe.title if recipe else '' }}"
+           placeholder="f.eks. Coq au Vin" />
+  </div>
+
+  <div class="form-group" style="margin-top:4px">
+    <label>Ingredienser <span class="muted" style="font-weight:400">(én per linje)</span></label>
+    <textarea name="ingredients" class="input textarea" rows="10"
+              placeholder="400g kyllinglår&#10;2 dl rødvin&#10;1 løk, finhakket&#10;…">{{ recipe.ingredients if recipe else '' }}</textarea>
+  </div>
+
+  <div class="form-group">
+    <label>Fremgangsmåte</label>
+    <textarea name="instructions" class="input textarea" rows="10"
+              placeholder="Beskriv steg for steg…">{{ recipe.instructions if recipe else '' }}</textarea>
+  </div>
+
+  <div class="form-group">
+    <label>Kilde / lenke <span class="muted" style="font-weight:400">(valgfritt)</span></label>
+    <input type="url" name="source_url" class="input"
+           value="{{ recipe.source_url if recipe else '' }}"
+           placeholder="https://…" />
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">💾 Lagre oppskrift</button>
+    <a href="{{ url_for('kveld', dinner_id=dinner.id) }}" class="btn btn-ghost">Avbryt</a>
+    {% if recipe and recipe.dinner_id %}
+    <a href="{{ url_for('handleliste', dinner_id=dinner.id) }}" class="btn btn-outline" style="margin-left:auto">🛒 Handleliste</a>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

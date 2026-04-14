@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Hvem skylder hvem – Middagsklubben{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>🍽️ Hvem skylder hvem</h1>
+    <p class="page-sub">Logg bytte av vertskap og ubetalte middager</p>
+  </div>
+</div>
+
+{% set open_debts = debts | rejectattr('settled') | list %}
+{% set done_debts = debts | selectattr('settled') | list %}
+
+{% if open_debts %}
+<div class="section">
+  <div class="section-title">Utestående</div>
+  <div class="debt-list">
+    {% for d in open_debts %}
+    <div class="debt-card">
+      <div class="debt-icon">🍽️</div>
+      <div class="debt-body">
+        <div class="debt-main">
+          <strong>{{ d.debtor.name }}</strong>
+          <span class="muted"> skylder </span>
+          <strong>{{ d.creditor.name }}</strong>
+          <span class="muted"> en middag</span>
+        </div>
+        {% if d.note %}<div class="debt-note muted">{{ d.note }}</div>{% endif %}
+        <div class="debt-date muted">Registrert {{ d.created_at.strftime('%d. %b %Y') }}</div>
+      </div>
+      <div class="debt-actions">
+        <form method="post" action="{{ url_for('gjor_opp_gjeld', debt_id=d.id) }}">
+          <button class="btn btn-sm btn-primary">✓ Gjort opp</button>
+        </form>
+        <form method="post" action="{{ url_for('slett_gjeld', debt_id=d.id) }}">
+          <button class="btn btn-ghost btn-sm" style="color:var(--muted)">Slett</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="empty-state" style="padding:32px 20px">
+  <div class="empty-icon">✅</div>
+  <p>Ingen utestående gjeld — alle er à jour!</p>
+</div>
+{% endif %}
+
+<!-- Registrer ny gjeld -->
+<div class="card" style="max-width:520px;margin-top:32px">
+  <h2 class="card-title">Registrer bytte / hopp</h2>
+  <form method="post" action="{{ url_for('legg_til_gjeld') }}" style="display:flex;flex-direction:column;gap:14px">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Skylder (hoppet over / ble erstattet)</label>
+        <select name="debtor_id" class="input" required>
+          <option value="">— Velg —</option>
+          {% for m in members %}
+          <option value="{{ m.id }}">{{ m.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Til gode (tok ekstra / bytte)</label>
+        <select name="creditor_id" class="input" required>
+          <option value="">— Velg —</option>
+          {% for m in members %}
+          <option value="{{ m.id }}">{{ m.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notat <span class="muted" style="font-weight:400">(valgfritt)</span></label>
+      <input type="text" name="note" class="input" placeholder="f.eks. Jonas hoppet over januar-kvelden" />
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Registrer</button>
+    </div>
+  </form>
+</div>
+
+{% if done_debts %}
+<div class="section" style="margin-top:40px">
+  <div class="section-title">Gjort opp</div>
+  <div class="debt-list">
+    {% for d in done_debts %}
+    <div class="debt-card debt-card-done">
+      <div class="debt-icon">✅</div>
+      <div class="debt-body">
+        <div class="debt-main">
+          <strong>{{ d.debtor.name }}</strong>
+          <span class="muted"> skyldte </span>
+          <strong>{{ d.creditor.name }}</strong>
+        </div>
+        {% if d.note %}<div class="debt-note muted">{{ d.note }}</div>{% endif %}
+      </div>
+      <form method="post" action="{{ url_for('slett_gjeld', debt_id=d.id) }}">
+        <button class="btn btn-ghost btn-sm" style="color:var(--muted)">Fjern</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -97,8 +97,15 @@
   <div class="drink-entry">
     <div class="drink-header">
       <span class="drink-num"></span>
-      <button type="button" class="btn-remove" onclick="this.closest('.drink-entry').remove()">✕</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <label class="btn btn-outline btn-sm scan-btn" title="Skann etikett med kamera/bilde">
+          📷 Skann etikett
+          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="skannEtikett(this)" />
+        </label>
+        <button type="button" class="btn-remove" onclick="this.closest('.drink-entry').remove()">✕</button>
+      </div>
     </div>
+    <div class="scan-status" style="display:none;font-size:0.82rem;color:var(--muted);margin-bottom:10px;"></div>
     <div class="form-row form-row-3">
       <div class="form-group">
         <label>Type</label>
@@ -139,6 +146,46 @@
     const clone = tmpl.content.cloneNode(true);
     clone.querySelector('.drink-num').textContent = `Drikke ${drinkCount}`;
     document.getElementById('drinks-container').appendChild(clone);
+  }
+
+  async function skannEtikett(input) {
+    const entry  = input.closest('.drink-entry');
+    const status = entry.querySelector('.scan-status');
+    const file   = input.files[0];
+    if (!file) return;
+
+    status.style.display = 'block';
+    status.textContent   = '⏳ Analyserer etikett…';
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const res  = await fetch('/api/skann_etikett', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (data.error) {
+        status.textContent = '⚠️ ' + data.error;
+        return;
+      }
+
+      // Fill in fields
+      if (data.type) {
+        const sel = entry.querySelector('select[name="drink_type[]"]');
+        const opt = [...sel.options].find(o => o.value === data.type);
+        if (opt) sel.value = data.type;
+      }
+      if (data.name)         entry.querySelector('[name="drink_name[]"]').value  = data.name;
+      if (data.year)         entry.querySelector('[name="drink_year[]"]').value  = data.year;
+      if (data.grape_type)   entry.querySelector('[name="drink_grape[]"]').value = data.grape_type;
+      if (data.tasting_notes) entry.querySelector('[name="drink_notes[]"]').value = data.tasting_notes;
+
+      status.textContent = '✅ Etikett lest!';
+      setTimeout(() => { status.style.display = 'none'; }, 3000);
+
+    } catch (e) {
+      status.textContent = '⚠️ Noe gikk galt. Prøv igjen.';
+    }
   }
 
   // Start med én drink-rad

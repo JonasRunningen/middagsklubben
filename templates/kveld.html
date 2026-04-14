@@ -26,27 +26,44 @@
 
     <!-- Meny -->
     <div class="card">
-      <h2 class="card-title">Meny</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 class="card-title" style="margin:0;padding:0;border:none;">Meny</h2>
+        {% if recipes %}
+        <a href="{{ url_for('handleliste', dinner_id=dinner.id) }}" class="btn btn-outline btn-sm">🛒 Handleliste</a>
+        {% endif %}
+      </div>
       <div class="menu-list">
         {% if dinner.forrett %}
+        {% set r_forrett = recipes | selectattr('course','equalto','forrett') | list | first %}
         <div class="menu-item">
           <span class="menu-label">Forrett</span>
           <span class="menu-val">{{ dinner.forrett }}</span>
           {% if dinner.forrett_cook %}<span class="menu-chef">av {{ dinner.forrett_cook.name }}</span>{% endif %}
+          <a href="{{ url_for('oppskrift', dinner_id=dinner.id, course='forrett') }}" class="recipe-link">
+            {{ '📖 Se oppskrift' if r_forrett else '+ Legg til oppskrift' }}
+          </a>
         </div>
         {% endif %}
         {% if dinner.hovedrett %}
+        {% set r_hoved = recipes | selectattr('course','equalto','hoved') | list | first %}
         <div class="menu-item">
           <span class="menu-label">Hovedrett</span>
           <span class="menu-val">{{ dinner.hovedrett }}</span>
           {% if dinner.host %}<span class="menu-chef">av {{ dinner.host.name }}</span>{% endif %}
+          <a href="{{ url_for('oppskrift', dinner_id=dinner.id, course='hoved') }}" class="recipe-link">
+            {{ '📖 Se oppskrift' if r_hoved else '+ Legg til oppskrift' }}
+          </a>
         </div>
         {% endif %}
         {% if dinner.dessert %}
+        {% set r_dessert = recipes | selectattr('course','equalto','dessert') | list | first %}
         <div class="menu-item">
           <span class="menu-label">Dessert</span>
           <span class="menu-val">{{ dinner.dessert }}</span>
           {% if dinner.dessert_cook %}<span class="menu-chef">av {{ dinner.dessert_cook.name }}</span>{% endif %}
+          <a href="{{ url_for('oppskrift', dinner_id=dinner.id, course='dessert') }}" class="recipe-link">
+            {{ '📖 Se oppskrift' if r_dessert else '+ Legg til oppskrift' }}
+          </a>
         </div>
         {% endif %}
         {% if not dinner.forrett and not dinner.hovedrett and not dinner.dessert %}
@@ -81,6 +98,39 @@
       <p class="notes-text">{{ dinner.notes }}</p>
     </div>
     {% endif %}
+
+    <!-- Sitatlogg -->
+    <div class="card">
+      <h2 class="card-title">Sitater fra kvelden 💬</h2>
+      {% if quotes %}
+      <div class="quote-list">
+        {% for q in quotes %}
+        <div class="quote-item">
+          <div class="quote-mark">"</div>
+          <div class="quote-body">
+            <div class="quote-text">{{ q.text }}</div>
+            {% if q.member %}<div class="quote-author">— {{ q.member.name }}</div>{% endif %}
+          </div>
+          <form method="post" action="{{ url_for('slett_sitat', dinner_id=dinner.id, quote_id=q.id) }}" style="align-self:flex-start">
+            <button class="photo-delete" style="position:static;background:none;color:var(--muted);font-size:0.8rem;" title="Slett">✕</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+        <p class="muted" style="margin-bottom:12px;">Ingen sitater ennå — hva ble sagt kvelden?</p>
+      {% endif %}
+      <form method="post" action="{{ url_for('legg_til_sitat', dinner_id=dinner.id) }}" class="quote-add-form">
+        <input type="text" name="text" class="input" placeholder="Skriv inn et sitat…" required />
+        <select name="member_id" class="input" style="flex:0 0 auto;width:auto">
+          <option value="">— Hvem sa det? —</option>
+          {% for m in members %}
+          <option value="{{ m.id }}">{{ m.name }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-outline btn-sm">Legg til</button>
+      </form>
+    </div>
 
     <!-- Bilder -->
     <div class="card">

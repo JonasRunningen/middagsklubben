@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ year }} i tall – Middagsklubben{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">Årsoppsummering</div>
+    <h1>{{ year }} i tall 🎊</h1>
+  </div>
+  <div class="page-header-actions">
+    {% for y in all_years %}
+      <a href="{{ url_for('arsoppsummering', year=y) }}"
+         class="btn btn-sm {{ 'btn-primary' if y == year else 'btn-outline' }}">{{ y }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{% if total_dinners == 0 %}
+<div class="empty-state">
+  <div class="empty-icon">📅</div>
+  <p>Ingen middager registrert for {{ year }}.</p>
+</div>
+{% else %}
+
+<!-- Store tall -->
+<div class="wrapped-grid">
+  <div class="wrapped-card wrapped-accent">
+    <div class="wrapped-num">{{ total_dinners }}</div>
+    <div class="wrapped-label">Middager</div>
+  </div>
+  <div class="wrapped-card">
+    <div class="wrapped-num">🍷 {{ total_drinks }}</div>
+    <div class="wrapped-label">Flasker vin & øl</div>
+  </div>
+  {% if avg_score_year %}
+  <div class="wrapped-card">
+    <div class="wrapped-num">{{ avg_score_year }} ★</div>
+    <div class="wrapped-label">Snittpoeng</div>
+  </div>
+  {% endif %}
+  {% if unique_cats > 0 %}
+  <div class="wrapped-card">
+    <div class="wrapped-num">{{ unique_cats }}</div>
+    <div class="wrapped-label">Forskjellige kjøkken</div>
+  </div>
+  {% endif %}
+  {% if total_quotes %}
+  <div class="wrapped-card">
+    <div class="wrapped-num">💬 {{ total_quotes }}</div>
+    <div class="wrapped-label">Sitater loggført</div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="stats-two-col" style="margin-top:24px">
+
+  <!-- Høydepunkter -->
+  <div class="card">
+    <h2 class="card-title">Høydepunkter</h2>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      {% if best_dinner %}
+      <div class="highlight-row">
+        <div class="highlight-label">🏆 Beste kveld</div>
+        <div class="highlight-val">
+          <a href="{{ url_for('kveld', dinner_id=best_dinner.id) }}">
+            {{ best_dinner.host.name if best_dinner.host else '?' }}s kveld
+          </a>
+          <span class="muted"> · {{ best_dinner.date.strftime('%d. %b') }} · {{ best_score }} ★</span>
+        </div>
+      </div>
+      {% endif %}
+      {% if top_host %}
+      <div class="highlight-row">
+        <div class="highlight-label">👨‍🍳 Mest aktive vert</div>
+        <div class="highlight-val">{{ top_host[0] }} <span class="muted">· {{ top_host[1] }} ganger</span></div>
+      </div>
+      {% endif %}
+      {% if top_cat %}
+      <div class="highlight-row">
+        <div class="highlight-label">🌍 Favorittkjøkken</div>
+        <div class="highlight-val">{{ top_cat[0] }} <span class="muted">· {{ top_cat[1] }} ganger</span></div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Kvelder dette året -->
+  <div class="card">
+    <h2 class="card-title">Alle kvelder</h2>
+    <div class="dinner-list">
+      {% for d in dinners %}
+      <a href="{{ url_for('kveld', dinner_id=d.id) }}" class="dinner-card">
+        <div class="dinner-card-date">{{ d.date.strftime('%d. %b') }}</div>
+        <div class="dinner-card-body">
+          <div class="dinner-card-host">{{ d.host.name if d.host else '—' }}</div>
+          {% if d.category %}<div class="dinner-card-cat">{{ d.category }}</div>{% endif %}
+        </div>
+        {% if d.avg_score %}<div class="score-badge">{{ d.avg_score }} ★</div>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+{% if awards_year %}
+<div class="card" style="margin-top:24px">
+  <h2 class="card-title">🏆 Awards {{ year }}</h2>
+  <div class="awards-grid">
+    {% for a in awards_year %}
+    <div class="award-card award-card-sm">
+      <div class="award-cat">{{ award_dict.get(a.category, a.category) }}</div>
+      <div class="award-winner">{{ a.winner }}</div>
+      {% if a.description %}<div class="award-desc muted">{{ a.description }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <a href="{{ url_for('awards', year=year) }}" class="btn btn-outline btn-sm" style="margin-top:16px">Se alle awards →</a>
+</div>
+{% endif %}
+
+{% if recent_quotes %}
+<div class="card" style="margin-top:24px">
+  <h2 class="card-title">💬 Sitater fra {{ year }}</h2>
+  <div class="quote-list">
+    {% for q in recent_quotes %}
+    <div class="quote-item">
+      <div class="quote-mark">"</div>
+      <div class="quote-body">
+        <div class="quote-text">{{ q.text }}</div>
+        <div class="quote-footer">
+          {% if q.member %}<span class="quote-author">— {{ q.member.name }}</span>{% endif %}
+          <span class="muted"> · <a href="{{ url_for('kveld', dinner_id=q.dinner_id) }}">{{ q.dinner.date.strftime('%d. %b') }}</a></span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

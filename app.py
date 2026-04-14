@@ -1,11 +1,13 @@
 import os
 import uuid
+import json
+import base64
 from datetime import date
 from flask import (Flask, render_template, request, redirect,
-                   url_for, flash, abort)
+                   url_for, flash, abort, jsonify)
 from werkzeug.utils import secure_filename
 from sqlalchemy import func
-from models import db, Member, Dinner, Drink, Score, Photo
+from models import db, Member, Dinner, Drink, Score, Photo, Quote, Recipe, Award, HostDebt
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -140,7 +142,9 @@ def kveld(dinner_id):
                            members=members,
                            score_map=score_map,
                            drinks=dinner.drinks.all(),
-                           photos=dinner.photos.order_by(Photo.uploaded_at).all())
+                           photos=dinner.photos.order_by(Photo.uploaded_at).all(),
+                           quotes=dinner.quotes.order_by(Quote.added_at).all(),
+                           recipes=dinner.recipes.all())
 
 
 @app.route('/kveld/<int:dinner_id>/score', methods=['POST'])
@@ -312,6 +316,312 @@ def flytt_medlem(member_id):
             members[idx+1].order_index, members[idx].order_index
     db.session.commit()
     return redirect(url_for('medlemmer'))
+
+
+# ── Quotes ────────────────────────────────────────────────────────────────────
+
+@app.route('/kveld/<int:dinner_id>/sitat', methods=['POST'])
+def legg_til_sitat(dinner_id):
+    Dinner.query.get_or_404(dinner_id)
+    text      = request.form.get('text', '').strip()
+    member_id = request.form.get('member_id') or None
+    if text:
+        q = Quote(dinner_id=dinner_id, text=text,
+                  member_id=int(member_id) if member_id else None)
+        db.session.add(q)
+        db.session.commit()
+    return redirect(url_for('kveld', dinner_id=dinner_id))
+
+
+@app.route('/kveld/<int:dinner_id>/sitat/<int:quote_id>/slett', methods=['POST'])
+def slett_sitat(dinner_id, quote_id):
+    q = Quote.query.get_or_404(quote_id)
+    db.session.delete(q)
+    db.session.commit()
+    return redirect(url_for('kveld', dinner_id=dinner_id))
+
+
+# ── Recipes ───────────────────────────────────────────────────────────────────
+
+COURSE_LABELS = {'forrett': 'Forrett', 'hoved': 'Hovedrett', 'dessert': 'Dessert'}
+
+
+@app.route('/kveld/<int:dinner_id>/oppskrift/<course>', methods=['GET', 'POST'])
+def oppskrift(dinner_id, course):
+    if course not in COURSE_LABELS:
+        abort(404)
+    dinner = Dinner.query.get_or_404(dinner_id)
+    recipe = Recipe.query.filter_by(dinner_id=dinner_id, course=course).first()
+
+    if request.method == 'POST':
+        f = request.form
+        if recipe is None:
+            recipe = Recipe(dinner_id=dinner_id, course=course)
+            db.session.add(recipe)
+        recipe.title        = f.get('title', '').strip()
+        recipe.ingredients  = f.get('ingredients', '').strip()
+        recipe.instructions = f.get('instructions', '').strip()
+        recipe.source_url   = f.get('source_url', '').strip()
+        db.session.commit()
+        flash('Oppskrift lagret! 📖', 'success')
+        return redirect(url_for('oppskrift', dinner_id=dinner_id, course=course))
+
+    return render_template('oppskrift.html', dinner=dinner, recipe=recipe,
+                           course=course, course_label=COURSE_LABELS[course])
+
+
+@app.route('/kveld/<int:dinner_id>/handleliste')
+def handleliste(dinner_id):
+    dinner  = Dinner.query.get_or_404(dinner_id)
+    recipes = Recipe.query.filter_by(dinner_id=dinner_id).all()
+    items   = []
+    for r in recipes:
+        if r.ingredients:
+            for line in r.ingredients.splitlines():
+                line = line.strip()
+                if line:
+                    items.append({'course': COURSE_LABELS.get(r.course, r.course),
+                                  'text': line, 'recipe': r.title})
+    return render_template('handleliste.html', dinner=dinner, items=items, recipes=recipes)
+
+
+# ── Awards ────────────────────────────────────────────────────────────────────
+
+AWARD_CATEGORIES = [
+    ('beste_forrett',  '🥗 Beste forrett'),
+    ('beste_hoved',    '🍖 Beste hovedrett'),
+    ('beste_dessert',  '🍮 Beste dessert'),
+    ('beste_vin',      '🍷 Beste vinvalg'),
+    ('kveldets_mvp',   '🌟 Kveldens MVP'),
+    ('arets_vert',     '🏆 Årets vert'),
+    ('overraskelse',   '😮 Mest overraskende rett'),
+    ('morsomste',      '😂 Morsomste øyeblikk'),
+]
+AWARD_DICT = dict(AWARD_CATEGORIES)
+
+
+@app.route('/awards')
+@app.route('/awards/<int:year>')
+def awards(year=None):
+    from datetime import date as dt
+    all_years = db.session.query(db.func.distinct(Award.year)).order_by(Award.year.desc()).all()
+    all_years = [y[0] for y in all_years]
+    if year is None:
+        year = dt.today().year
+    if year not in all_years and all_years:
+        year = all_years[0]
+    awards_this_year = Award.query.filter_by(year=year).order_by(Award.created_at).all()
+    dinners = Dinner.query.order_by(Dinner.date.desc()).all()
+    return render_template('awards.html',
+                           awards=awards_this_year,
+                           all_years=all_years,
+                           year=year,
+                           categories=AWARD_CATEGORIES,
+                           award_dict=AWARD_DICT,
+                           dinners=dinners)
+
+
+@app.route('/awards/legg_til', methods=['POST'])
+def legg_til_award():
+    from datetime import date as dt
+    f        = request.form
+    year     = int(f.get('year', dt.today().year))
+    category = f.get('category', '').strip()
+    winner   = f.get('winner', '').strip()
+    desc     = f.get('description', '').strip()
+    dinner_id = f.get('dinner_id') or None
+    if category and winner:
+        a = Award(year=year, category=category, winner=winner,
+                  description=desc,
+                  dinner_id=int(dinner_id) if dinner_id else None)
+        db.session.add(a)
+        db.session.commit()
+        flash('Award delt ut! 🏆', 'success')
+    return redirect(url_for('awards', year=year))
+
+
+@app.route('/awards/<int:award_id>/slett', methods=['POST'])
+def slett_award(award_id):
+    a = Award.query.get_or_404(award_id)
+    year = a.year
+    db.session.delete(a)
+    db.session.commit()
+    return redirect(url_for('awards', year=year))
+
+
+# ── Gjeld ─────────────────────────────────────────────────────────────────────
+
+@app.route('/gjeld')
+def gjeld():
+    members = Member.query.filter_by(active=True).order_by(Member.order_index).all()
+    debts   = HostDebt.query.order_by(HostDebt.settled, HostDebt.created_at.desc()).all()
+    return render_template('gjeld.html', members=members, debts=debts)
+
+
+@app.route('/gjeld/legg_til', methods=['POST'])
+def legg_til_gjeld():
+    f           = request.form
+    debtor_id   = f.get('debtor_id')
+    creditor_id = f.get('creditor_id')
+    note        = f.get('note', '').strip()
+    if debtor_id and creditor_id and debtor_id != creditor_id:
+        d = HostDebt(debtor_id=int(debtor_id), creditor_id=int(creditor_id), note=note)
+        db.session.add(d)
+        db.session.commit()
+        flash('Gjeld registrert.', 'success')
+    else:
+        flash('Velg to forskjellige personer.', 'error')
+    return redirect(url_for('gjeld'))
+
+
+@app.route('/gjeld/<int:debt_id>/gjor_opp', methods=['POST'])
+def gjor_opp_gjeld(debt_id):
+    d = HostDebt.query.get_or_404(debt_id)
+    d.settled = True
+    db.session.commit()
+    flash('Gjeld gjort opp! 🎉', 'success')
+    return redirect(url_for('gjeld'))
+
+
+@app.route('/gjeld/<int:debt_id>/slett', methods=['POST'])
+def slett_gjeld(debt_id):
+    d = HostDebt.query.get_or_404(debt_id)
+    db.session.delete(d)
+    db.session.commit()
+    return redirect(url_for('gjeld'))
+
+
+# ── Årsoppsummering ───────────────────────────────────────────────────────────
+
+@app.route('/arsoppsummering')
+@app.route('/arsoppsummering/<int:year>')
+def arsoppsummering(year=None):
+    from datetime import date as dt
+    from collections import Counter
+
+    all_years = db.session.query(
+        db.func.strftime('%Y', Dinner.date).label('yr')
+    ).distinct().order_by('yr').all()
+    all_years = [int(y[0]) for y in all_years]
+
+    if year is None:
+        year = dt.today().year
+
+    dinners = Dinner.query.filter(
+        db.func.strftime('%Y', Dinner.date) == str(year)
+    ).order_by(Dinner.date).all()
+
+    total_dinners = len(dinners)
+    dinner_ids    = [d.id for d in dinners]
+
+    total_drinks  = Drink.query.filter(Drink.dinner_id.in_(dinner_ids)).count() if dinner_ids else 0
+    total_quotes  = Quote.query.filter(Quote.dinner_id.in_(dinner_ids)).count() if dinner_ids else 0
+
+    categories = [d.category for d in dinners if d.category]
+    top_cat    = Counter(categories).most_common(1)[0] if categories else None
+
+    best_dinner = None
+    best_score  = 0
+    for d in dinners:
+        if d.avg_score and d.avg_score > best_score:
+            best_score  = d.avg_score
+            best_dinner = d
+
+    host_counts = Counter(d.host.name for d in dinners if d.host)
+    top_host    = host_counts.most_common(1)[0] if host_counts else None
+
+    awards_year = Award.query.filter_by(year=year).all()
+    award_dict  = AWARD_DICT
+
+    recent_quotes = (Quote.query
+                     .filter(Quote.dinner_id.in_(dinner_ids))
+                     .order_by(Quote.added_at.desc())
+                     .limit(5).all()) if dinner_ids else []
+
+    all_scores = db.session.query(Score.score).filter(
+        Score.dinner_id.in_(dinner_ids), Score.score.isnot(None)
+    ).all() if dinner_ids else []
+    avg_score_year = round(sum(s[0] for s in all_scores) / len(all_scores), 1) if all_scores else None
+
+    return render_template('arsoppsummering.html',
+                           year=year,
+                           all_years=all_years,
+                           dinners=dinners,
+                           total_dinners=total_dinners,
+                           total_drinks=total_drinks,
+                           total_quotes=total_quotes,
+                           top_cat=top_cat,
+                           best_dinner=best_dinner,
+                           best_score=best_score,
+                           top_host=top_host,
+                           awards_year=awards_year,
+                           award_dict=award_dict,
+                           recent_quotes=recent_quotes,
+                           avg_score_year=avg_score_year,
+                           unique_cats=len(set(categories)))
+
+
+# ── Wine label scan ───────────────────────────────────────────────────────────
+
+@app.route('/api/skann_etikett', methods=['POST'])
+def skann_etikett():
+    import anthropic
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        return jsonify({'error': 'ANTHROPIC_API_KEY er ikke satt på serveren'}), 500
+
+    file = request.files.get('image')
+    if not file:
+        return jsonify({'error': 'Ingen bilde lastet opp'}), 400
+
+    raw = file.read()
+    image_data = base64.standard_b64encode(raw).decode('utf-8')
+    media_type = file.content_type or 'image/jpeg'
+    if media_type not in ('image/jpeg', 'image/png', 'image/gif', 'image/webp'):
+        media_type = 'image/jpeg'
+
+    client = anthropic.Anthropic(api_key=api_key)
+    message = client.messages.create(
+        model='claude-opus-4-6',
+        max_tokens=512,
+        messages=[{
+            'role': 'user',
+            'content': [
+                {
+                    'type': 'image',
+                    'source': {
+                        'type': 'base64',
+                        'media_type': media_type,
+                        'data': image_data,
+                    }
+                },
+                {
+                    'type': 'text',
+                    'text': (
+                        'Analyser dette vin/øl-etikettbildet og returner informasjon i JSON-format med disse feltene:\n'
+                        '- type: "vin", "øl" eller "annet"\n'
+                        '- name: fullt produktnavn inkludert produsent\n'
+                        '- year: årgangstall som heltall, eller null hvis ikke synlig\n'
+                        '- grape_type: druetype (vin) eller ølstil (øl), tom streng hvis ukjent\n'
+                        '- tasting_notes: smaksnotater fra etiketten, eller en kort norsk beskrivelse basert på vintypen\n\n'
+                        'Svar KUN med gyldig JSON, ingen annen tekst.'
+                    )
+                }
+            ]
+        }]
+    )
+
+    text = message.content[0].text.strip()
+    if text.startswith('```'):
+        text = text.split('\n', 1)[1].rsplit('```', 1)[0].strip()
+
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return jsonify({'error': 'Kunne ikke tolke svaret fra AI'}), 500
+
+    return jsonify(data)
 
 
 # ── Run ───────────────────────────────────────────────────────────────────────

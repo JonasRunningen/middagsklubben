@@ -32,12 +32,16 @@ class Dinner(db.Model):
 
     forrett_cook = db.relationship('Member', foreign_keys=[forrett_cook_id])
     dessert_cook = db.relationship('Member', foreign_keys=[dessert_cook_id])
-    drinks  = db.relationship('Drink', backref='dinner', lazy='dynamic',
-                              cascade='all, delete-orphan')
-    scores  = db.relationship('Score', backref='dinner', lazy='dynamic',
-                              cascade='all, delete-orphan')
-    photos  = db.relationship('Photo', backref='dinner', lazy='dynamic',
-                              cascade='all, delete-orphan')
+    drinks   = db.relationship('Drink',  backref='dinner', lazy='dynamic',
+                               cascade='all, delete-orphan')
+    scores   = db.relationship('Score',  backref='dinner', lazy='dynamic',
+                               cascade='all, delete-orphan')
+    photos   = db.relationship('Photo',  backref='dinner', lazy='dynamic',
+                               cascade='all, delete-orphan')
+    quotes   = db.relationship('Quote',  backref='dinner', lazy='dynamic',
+                               cascade='all, delete-orphan')
+    recipes  = db.relationship('Recipe', backref='dinner', lazy='dynamic',
+                               cascade='all, delete-orphan')
 
     @property
     def avg_score(self):
@@ -59,7 +63,7 @@ class Drink(db.Model):
     __tablename__ = 'drinks'
     id            = db.Column(db.Integer, primary_key=True)
     dinner_id     = db.Column(db.Integer, db.ForeignKey('dinners.id'), nullable=False)
-    type          = db.Column(db.String(20), default='vin')   # vin | øl | annet
+    type          = db.Column(db.String(20), default='vin')
     name          = db.Column(db.String(200))
     year          = db.Column(db.Integer, nullable=True)
     grape_type    = db.Column(db.String(100))
@@ -71,7 +75,7 @@ class Score(db.Model):
     id        = db.Column(db.Integer, primary_key=True)
     dinner_id = db.Column(db.Integer, db.ForeignKey('dinners.id'), nullable=False)
     member_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)
-    score     = db.Column(db.Integer)   # 1–5
+    score     = db.Column(db.Integer)
     comment   = db.Column(db.Text)
     __table_args__ = (db.UniqueConstraint('dinner_id', 'member_id',
                                           name='uq_score_dinner_member'),)
@@ -83,3 +87,49 @@ class Photo(db.Model):
     dinner_id   = db.Column(db.Integer, db.ForeignKey('dinners.id'), nullable=False)
     filename    = db.Column(db.String(255), nullable=False)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Quote(db.Model):
+    __tablename__ = 'quotes'
+    id        = db.Column(db.Integer, primary_key=True)
+    dinner_id = db.Column(db.Integer, db.ForeignKey('dinners.id'), nullable=False)
+    member_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=True)
+    text      = db.Column(db.Text, nullable=False)
+    added_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    member    = db.relationship('Member')
+
+
+class Recipe(db.Model):
+    __tablename__ = 'recipes'
+    id           = db.Column(db.Integer, primary_key=True)
+    dinner_id    = db.Column(db.Integer, db.ForeignKey('dinners.id'), nullable=False)
+    course       = db.Column(db.String(20))   # forrett | hoved | dessert
+    title        = db.Column(db.String(200))
+    ingredients  = db.Column(db.Text)          # én ingrediens per linje
+    instructions = db.Column(db.Text)
+    source_url   = db.Column(db.String(500))
+
+
+class Award(db.Model):
+    __tablename__ = 'awards'
+    id          = db.Column(db.Integer, primary_key=True)
+    year        = db.Column(db.Integer, nullable=False)
+    category    = db.Column(db.String(100), nullable=False)
+    winner      = db.Column(db.String(200))
+    description = db.Column(db.Text)
+    dinner_id   = db.Column(db.Integer, db.ForeignKey('dinners.id'), nullable=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    dinner      = db.relationship('Dinner')
+
+
+class HostDebt(db.Model):
+    """Hvem skylder hvem middag — registrer bytte eller hopp"""
+    __tablename__ = 'host_debts'
+    id          = db.Column(db.Integer, primary_key=True)
+    debtor_id   = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)
+    creditor_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)
+    note        = db.Column(db.String(300))
+    settled     = db.Column(db.Boolean, default=False)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    debtor      = db.relationship('Member', foreign_keys=[debtor_id])
+    creditor    = db.relationship('Member', foreign_keys=[creditor_id])

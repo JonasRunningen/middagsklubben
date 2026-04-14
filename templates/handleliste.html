@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Handleliste – {{ dinner.date.strftime('%d. %b %Y') }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow"><a href="{{ url_for('kveld', dinner_id=dinner.id) }}">← Tilbake til kvelden</a></div>
+    <h1>🛒 Handleliste</h1>
+    <p class="page-sub">{{ dinner.host.name if dinner.host else '' }}s kveld · {{ dinner.date.strftime('%d. %b %Y') }}</p>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn btn-outline" onclick="window.print()">🖨️ Skriv ut</button>
+  </div>
+</div>
+
+{% if not items %}
+  <div class="empty-state">
+    <div class="empty-icon">📋</div>
+    <p>Ingen ingredienser lagt inn ennå.<br>Legg til oppskrifter fra kveldssiden for å generere handleliste.</p>
+  </div>
+{% else %}
+
+{% set ns = namespace(current_course='') %}
+<div class="shopping-list">
+  {% for item in items %}
+    {% if item.course != ns.current_course %}
+      {% if ns.current_course %}</ul>{% endif %}
+      {% set ns.current_course = item.course %}
+      <h3 class="shopping-course">{{ item.course }} — <span class="muted" style="font-weight:400;font-size:0.9rem">{{ item.recipe }}</span></h3>
+      <ul class="shopping-items">
+    {% endif %}
+    <li class="shopping-item">
+      <label>
+        <input type="checkbox" onchange="this.parentElement.classList.toggle('done', this.checked)" />
+        {{ item.text }}
+      </label>
+    </li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -6,6 +6,12 @@
   <title>{% block title %}Middagsklubben{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>" />
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
 </head>
 <body>
 
@@ -16,17 +22,24 @@
         <span class="logo-text">Middagsklubben</span>
       </a>
       <nav class="main-nav">
-        <a href="{{ url_for('index') }}"       class="{{ 'active' if request.endpoint == 'index' }}">Oversikt</a>
-        <a href="{{ url_for('ny_kveld') }}"    class="{{ 'active' if request.endpoint == 'ny_kveld' }}">+ Ny kveld</a>
-        <a href="{{ url_for('statistikk') }}"  class="{{ 'active' if request.endpoint == 'statistikk' }}">Statistikk</a>
-        <a href="{{ url_for('medlemmer') }}"   class="{{ 'active' if request.endpoint == 'medlemmer' }}">Medlemmer</a>
+        <a href="{{ url_for('index') }}"              class="{{ 'active' if request.endpoint == 'index' }}">Oversikt</a>
+        <a href="{{ url_for('ny_kveld') }}"           class="{{ 'active' if request.endpoint == 'ny_kveld' }}">+ Ny kveld</a>
+        <a href="{{ url_for('statistikk') }}"         class="{{ 'active' if request.endpoint == 'statistikk' }}">Statistikk</a>
+        <a href="{{ url_for('awards') }}"             class="{{ 'active' if request.endpoint in ('awards',) }}">Awards</a>
+        <a href="{{ url_for('gjeld') }}"              class="{{ 'active' if request.endpoint == 'gjeld' }}">Gjeld</a>
+        <a href="{{ url_for('arsoppsummering') }}"    class="{{ 'active' if request.endpoint == 'arsoppsummering' }}">Årsoppsummering</a>
+        <a href="{{ url_for('medlemmer') }}"          class="{{ 'active' if request.endpoint == 'medlemmer' }}">Medlemmer</a>
       </nav>
+      <button class="dark-toggle" id="darkToggle" title="Bytt tema" onclick="toggleDark()">🌙</button>
       <button class="hamburger" onclick="document.querySelector('.mobile-nav').classList.toggle('open')">☰</button>
     </div>
     <nav class="mobile-nav">
       <a href="{{ url_for('index') }}">Oversikt</a>
       <a href="{{ url_for('ny_kveld') }}">+ Ny kveld</a>
       <a href="{{ url_for('statistikk') }}">Statistikk</a>
+      <a href="{{ url_for('awards') }}">Awards</a>
+      <a href="{{ url_for('gjeld') }}">Gjeld</a>
+      <a href="{{ url_for('arsoppsummering') }}">Årsoppsummering</a>
       <a href="{{ url_for('medlemmer') }}">Medlemmer</a>
     </nav>
   </header>
@@ -55,5 +68,23 @@
     </div>
   </footer>
 
+  <script>
+    function toggleDark() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+        document.getElementById('darkToggle').textContent = '🌙';
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+        document.getElementById('darkToggle').textContent = '☀️';
+      }
+    }
+    // Set correct icon on load
+    if (document.documentElement.getAttribute('data-theme') === 'dark') {
+      document.getElementById('darkToggle').textContent = '☀️';
+    }
+  </script>
 </body>
 </html>

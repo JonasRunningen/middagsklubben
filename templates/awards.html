@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Awards {{ year }} – Middagsklubben{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>🏆 Awards {{ year }}</h1>
+    <p class="page-sub">Del ut æresprisene for sesongen</p>
+  </div>
+  <div class="page-header-actions">
+    {% for y in all_years %}
+      {% if y != year %}
+      <a href="{{ url_for('awards', year=y) }}" class="btn btn-outline btn-sm">{{ y }}</a>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Eksisterende awards -->
+{% if awards %}
+<div class="awards-grid">
+  {% for a in awards %}
+  <div class="award-card">
+    <div class="award-cat">{{ award_dict.get(a.category, a.category) }}</div>
+    <div class="award-winner">{{ a.winner }}</div>
+    {% if a.description %}<div class="award-desc muted">{{ a.description }}</div>{% endif %}
+    {% if a.dinner %}
+    <div class="award-dinner muted">
+      <a href="{{ url_for('kveld', dinner_id=a.dinner.id) }}">{{ a.dinner.date.strftime('%d. %b %Y') }}</a>
+    </div>
+    {% endif %}
+    <form method="post" action="{{ url_for('slett_award', award_id=a.id) }}" style="margin-top:8px">
+      <button class="btn btn-ghost btn-sm" style="color:var(--muted)">Slett</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">🏆</div>
+  <p>Ingen awards for {{ year }} ennå.<br>Del ut årets priser nedenfor!</p>
+</div>
+{% endif %}
+
+<!-- Legg til award -->
+<div class="card" style="max-width:600px;margin-top:32px">
+  <h2 class="card-title">Del ut en award</h2>
+  <form method="post" action="{{ url_for('legg_til_award') }}" style="display:flex;flex-direction:column;gap:14px">
+    <input type="hidden" name="year" value="{{ year }}" />
+    <div class="form-group">
+      <label>Kategori</label>
+      <select name="category" class="input" required>
+        <option value="">— Velg kategori —</option>
+        {% for val, label in categories %}
+        <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Vinner / hvem/hva</label>
+      <input type="text" name="winner" class="input" placeholder="f.eks. Jonas, Ossobuco, 2019 Barolo…" required />
+    </div>
+    <div class="form-group">
+      <label>Begrunnelse <span class="muted" style="font-weight:400">(valgfritt)</span></label>
+      <input type="text" name="description" class="input" placeholder="Kort forklaring…" />
+    </div>
+    <div class="form-group">
+      <label>Knyttet til kveld <span class="muted" style="font-weight:400">(valgfritt)</span></label>
+      <select name="dinner_id" class="input">
+        <option value="">— Ingen spesifikk kveld —</option>
+        {% for d in dinners %}
+        <option value="{{ d.id }}">{{ d.date.strftime('%d. %b %Y') }} — {{ d.host.name if d.host else '?' }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">🏆 Del ut award</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
