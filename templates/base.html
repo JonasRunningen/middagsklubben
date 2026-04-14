@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}Middagsklubben{% endblock %}</title>
+  <title>{% block title %}Gaffelbrødrene{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>" />
   <script>
@@ -19,7 +19,7 @@
     <div class="container header-inner">
       <a href="{{ url_for('index') }}" class="site-logo">
         <span class="logo-icon">🍷</span>
-        <span class="logo-text">Middagsklubben</span>
+        <span class="logo-text">Gaffelbrødrene</span>
       </a>
       <nav class="main-nav">
         <a href="{{ url_for('index') }}"              class="{{ 'active' if request.endpoint == 'index' }}">Oversikt</a>
@@ -76,7 +76,7 @@
 
   <footer class="site-footer">
     <div class="container">
-      <span>🍷 Middagsklubben</span>
+      <span>🍷 Gaffelbrødrene</span>
     </div>
   </footer>
 
