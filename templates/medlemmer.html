@@ -24,6 +24,9 @@
         </span>
         <div class="rotation-actions">
           {% if m.is_admin %}<span class="admin-badge" title="Administrator">👑</span>{% endif %}
+          {% if m.username %}<span class="username-badge" title="Brukernavn: {{ m.username }}">@{{ m.username }}</span>{% endif %}
+          <button class="btn-icon" title="Sett brukernavn/passord"
+            onclick="document.getElementById('userform-{{ m.id }}').classList.toggle('hidden')">✎</button>
           <form method="post" action="{{ url_for('toggle_admin', member_id=m.id) }}" style="display:inline">
             <button class="btn-icon {{ 'btn-icon-active' if m.is_admin }}" title="{{ 'Fjern admin' if m.is_admin else 'Gi admin' }}">
               {{ '★' if m.is_admin else '☆' }}
@@ -42,6 +45,14 @@
             <button class="btn-icon btn-icon-danger" title="Fjern">✕</button>
           </form>
         </div>
+        <form id="userform-{{ m.id }}" method="post"
+              action="{{ url_for('sett_bruker', member_id=m.id) }}"
+              class="inline-user-form hidden">
+          <input type="text" name="username" placeholder="Brukernavn"
+                 value="{{ m.username or '' }}" required />
+          <input type="password" name="password" placeholder="Nytt passord (la stå for å beholde)" />
+          <button type="submit" class="btn btn-primary btn-sm">Lagre</button>
+        </form>
       </li>
       {% endif %}
       {% endfor %}

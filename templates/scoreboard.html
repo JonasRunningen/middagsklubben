@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Scoreboard – Middagsklubben{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>🏆 Scoreboard</h1>
+  <p class="page-sub">Rangert etter totalt antall stjerner mottatt fra andre</p>
+</div>
+
+{% if not scores or scores | selectattr('total', 'gt', 0) | list | length == 0 %}
+  <div class="card" style="text-align:center; padding: 48px; color: var(--muted);">
+    <p style="font-size:2rem; margin-bottom:12px;">🍽️</p>
+    <p>Ingen score registrert ennå. Start med å gi poeng etter neste middag!</p>
+  </div>
+{% else %}
+
+  {# ── Podium (topp 3) ── #}
+  {% set top = scores[:3] %}
+  <div class="podium-wrap">
+
+    {% if top | length >= 2 %}
+    <div class="podium-slot podium-2">
+      <div class="podium-avatar">{{ top[1].member.name[0] }}</div>
+      <div class="podium-name">{{ top[1].member.name }}</div>
+      <div class="podium-stars">⭐ {{ top[1].total }}</div>
+      <div class="podium-avg muted">snitt {{ top[1].avg }}</div>
+      <div class="podium-block podium-block-2">
+        <span class="podium-medal">🥈</span>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if top | length >= 1 %}
+    <div class="podium-slot podium-1">
+      <div class="podium-crown">👑</div>
+      <div class="podium-avatar podium-avatar-1">{{ top[0].member.name[0] }}</div>
+      <div class="podium-name">{{ top[0].member.name }}</div>
+      <div class="podium-stars">⭐ {{ top[0].total }}</div>
+      <div class="podium-avg muted">snitt {{ top[0].avg }}</div>
+      <div class="podium-block podium-block-1">
+        <span class="podium-medal">🥇</span>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if top | length >= 3 %}
+    <div class="podium-slot podium-3">
+      <div class="podium-avatar">{{ top[2].member.name[0] }}</div>
+      <div class="podium-name">{{ top[2].member.name }}</div>
+      <div class="podium-stars">⭐ {{ top[2].total }}</div>
+      <div class="podium-avg muted">snitt {{ top[2].avg }}</div>
+      <div class="podium-block podium-block-3">
+        <span class="podium-medal">🥉</span>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  {# ── Resten (4. plass og ned) ── #}
+  {% if scores | length > 3 %}
+  <div class="card" style="margin-top: 32px;">
+    <h2 class="card-title">Øvrige plasseringer</h2>
+    <table class="score-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Navn</th>
+          <th>Totale stjerner</th>
+          <th>Snitt per kveld</th>
+          <th>Kvelder som vert</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in scores[3:] %}
+        <tr>
+          <td class="score-rank">{{ loop.index + 3 }}</td>
+          <td class="score-name">
+            <span class="score-avatar">{{ s.member.name[0] }}</span>
+            {{ s.member.name }}
+          </td>
+          <td>
+            <span class="score-total">⭐ {{ s.total }}</span>
+          </td>
+          <td class="muted">{{ s.avg if s.avg > 0 else '—' }}</td>
+          <td class="muted">{{ s.hosted }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+{% endif %}
+{% endblock %}

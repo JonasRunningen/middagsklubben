@@ -25,6 +25,7 @@
         <a href="{{ url_for('index') }}"              class="{{ 'active' if request.endpoint == 'index' }}">Oversikt</a>
         <a href="{{ url_for('ny_kveld') }}"           class="{{ 'active' if request.endpoint == 'ny_kveld' }}">+ Ny kveld</a>
         <a href="{{ url_for('statistikk') }}"         class="{{ 'active' if request.endpoint == 'statistikk' }}">Statistikk</a>
+        <a href="{{ url_for('scoreboard') }}"         class="{{ 'active' if request.endpoint == 'scoreboard' }}">Scoreboard</a>
         <a href="{{ url_for('awards') }}"             class="{{ 'active' if request.endpoint in ('awards',) }}">Awards</a>
         <a href="{{ url_for('gjeld') }}"              class="{{ 'active' if request.endpoint == 'gjeld' }}">Gjeld</a>
         <a href="{{ url_for('arsoppsummering') }}"    class="{{ 'active' if request.endpoint == 'arsoppsummering' }}">Årsoppsummering</a>

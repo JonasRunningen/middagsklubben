@@ -6,11 +6,13 @@ db = SQLAlchemy()
 
 class Member(db.Model):
     __tablename__ = 'members'
-    id           = db.Column(db.Integer, primary_key=True)
-    name         = db.Column(db.String(100), nullable=False)
-    order_index  = db.Column(db.Integer, default=0)
-    active       = db.Column(db.Boolean, default=True)
-    is_admin     = db.Column(db.Boolean, default=False)
+    id            = db.Column(db.Integer, primary_key=True)
+    name          = db.Column(db.String(100), nullable=False)
+    order_index   = db.Column(db.Integer, default=0)
+    active        = db.Column(db.Boolean, default=True)
+    is_admin      = db.Column(db.Boolean, default=False)
+    username      = db.Column(db.String(100), unique=True, nullable=True)
+    password_hash = db.Column(db.String(200), nullable=True)
 
     dinners_hosted = db.relationship('Dinner', foreign_keys='Dinner.host_id',
                                      backref='host', lazy='dynamic')

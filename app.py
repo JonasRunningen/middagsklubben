@@ -7,6 +7,7 @@ from functools import wraps
 from flask import (Flask, render_template, request, redirect,
                    url_for, flash, abort, jsonify, session)
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import func
 from models import db, Member, Dinner, Drink, Score, Photo, Quote, Recipe, Award, HostDebt
 
@@ -29,65 +30,69 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(BASE_DIR, "mid
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH']    = 16 * 1024 * 1024   # 16 MB
 
-CLUB_PASSWORD = os.environ.get('CLUB_PASSWORD', 'middag2026')
-
 db.init_app(app)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 with app.app_context():
     db.create_all()
-    # Add is_admin column if it doesn't exist (upgrade existing DB)
+    # Migrate: add new columns if missing
     from sqlalchemy import inspect, text
     inspector = inspect(db.engine)
     cols = [c['name'] for c in inspector.get_columns('members')]
-    if 'is_admin' not in cols:
-        with db.engine.connect() as conn:
+    with db.engine.connect() as conn:
+        if 'is_admin' not in cols:
             conn.execute(text('ALTER TABLE members ADD COLUMN is_admin BOOLEAN DEFAULT 0'))
-            conn.commit()
-    # Ensure Jonas Runningen is admin
-    jonas = Member.query.filter(Member.name.ilike('%Jonas Runningen%')).first()
-    if jonas and not jonas.is_admin:
-        jonas.is_admin = True
+        if 'username' not in cols:
+            conn.execute(text('ALTER TABLE members ADD COLUMN username VARCHAR(100)'))
+        if 'password_hash' not in cols:
+            conn.execute(text('ALTER TABLE members ADD COLUMN password_hash VARCHAR(200)'))
+        conn.commit()
+
+    # Ensure default admin user exists
+    admin = Member.query.filter_by(username='admin').first()
+    if not admin:
+        admin = Member(
+            name='Admin',
+            order_index=0,
+            active=False,   # not in dinner rotation
+            is_admin=True,
+            username='admin',
+            password_hash=generate_password_hash('admin', method='pbkdf2:sha256'),
+        )
+        db.session.add(admin)
+        db.session.commit()
+    elif not admin.password_hash:
+        admin.password_hash = generate_password_hash('admin', method='pbkdf2:sha256')
         db.session.commit()
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
-def login_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get('logged_in'):
-            return redirect(url_for('login', next=request.path))
-        return f(*args, **kwargs)
-    return decorated
-
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if session.get('logged_in'):
         return redirect(url_for('index'))
-    members = Member.query.filter_by(active=True).order_by(Member.order_index).all()
     if request.method == 'POST':
-        password  = request.form.get('password', '')
-        member_id = request.form.get('member_id', '')
-        if password == CLUB_PASSWORD and member_id:
-            member = Member.query.get(int(member_id))
-            if member:
-                session['logged_in']  = True
-                session['member_id']  = member.id
-                session['member_name'] = member.name
-                session['is_admin']   = member.is_admin
-                session.permanent     = True
-                next_url = request.args.get('next') or url_for('index')
-                return redirect(next_url)
-        flash('Feil passord eller ugyldig bruker. Prøv igjen.', 'error')
-    return render_template('login.html', members=members)
+        username = request.form.get('username', '').strip().lower()
+        password = request.form.get('password', '')
+        member = Member.query.filter(
+            db.func.lower(Member.username) == username
+        ).first()
+        if member and member.password_hash and check_password_hash(member.password_hash, password):
+            session['logged_in']   = True
+            session['member_id']   = member.id
+            session['member_name'] = member.name
+            session['is_admin']    = member.is_admin
+            session.permanent      = True
+            next_url = request.args.get('next') or url_for('index')
+            return redirect(next_url)
+        flash('Feil brukernavn eller passord.', 'error')
+    return render_template('login.html')
 
 
 @app.route('/logg_ut')
 def logg_ut():
     session.clear()
-    flash('Du er nå logget ut.', 'success')
     return redirect(url_for('login'))
 
 
@@ -233,6 +238,11 @@ def add_score(dinner_id):
     member_id = int(request.form['member_id'])
     score_val = request.form.get('score', '').strip()
     comment   = request.form.get('comment', '').strip()
+
+    # Block self-voting
+    if dinner.host_id and member_id == dinner.host_id:
+        flash('Du kan ikke stemme på din egen middag.', 'error')
+        return redirect(url_for('kveld', dinner_id=dinner_id))
 
     existing = Score.query.filter_by(dinner_id=dinner_id, member_id=member_id).first()
     if existing:
@@ -415,6 +425,76 @@ def toggle_admin(member_id):
     status = 'administrator' if member.is_admin else 'vanlig bruker'
     flash(f'{member.name} er nå {status}.', 'success')
     return redirect(url_for('medlemmer'))
+
+
+# ── User management (admin only) ─────────────────────────────────────────────
+
+@app.route('/medlemmer/<int:member_id>/sett_bruker', methods=['POST'])
+@admin_required
+def sett_bruker(member_id):
+    member   = Member.query.get_or_404(member_id)
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '').strip()
+
+    if not username:
+        flash('Brukernavn kan ikke være tomt.', 'error')
+        return redirect(url_for('medlemmer'))
+
+    # Check uniqueness
+    existing = Member.query.filter(
+        db.func.lower(Member.username) == username.lower(),
+        Member.id != member_id
+    ).first()
+    if existing:
+        flash(f'Brukernavnet "{username}" er allerede i bruk.', 'error')
+        return redirect(url_for('medlemmer'))
+
+    member.username = username
+    if password:
+        member.password_hash = generate_password_hash(password)
+    db.session.commit()
+    flash(f'Bruker for {member.name} er oppdatert.', 'success')
+    return redirect(url_for('medlemmer'))
+
+
+# ── Scoreboard ────────────────────────────────────────────────────────────────
+
+@app.route('/scoreboard')
+def scoreboard():
+    members = Member.query.filter_by(active=True).order_by(Member.name).all()
+
+    scores = []
+    for m in members:
+        # Total score = sum of all scores given to dinners hosted by this member
+        # Excluding self-votes (scorer != host)
+        total = db.session.query(func.sum(Score.score)).join(
+            Dinner, Score.dinner_id == Dinner.id
+        ).filter(
+            Dinner.host_id == m.id,
+            Score.member_id != m.id,
+            Score.score.isnot(None)
+        ).scalar() or 0
+
+        vote_count = db.session.query(func.count(Score.id)).join(
+            Dinner, Score.dinner_id == Dinner.id
+        ).filter(
+            Dinner.host_id == m.id,
+            Score.member_id != m.id,
+            Score.score.isnot(None)
+        ).scalar() or 0
+
+        avg = round(total / vote_count, 1) if vote_count else 0
+        hosted = m.dinners_hosted.count()
+        scores.append({
+            'member': m,
+            'total': total,
+            'avg': avg,
+            'votes': vote_count,
+            'hosted': hosted,
+        })
+
+    scores.sort(key=lambda x: (-x['total'], -x['avg'], x['member'].name))
+    return render_template('scoreboard.html', scores=scores)
 
 
 # ── Quotes ────────────────────────────────────────────────────────────────────
