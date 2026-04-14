@@ -4,15 +4,15 @@
 {% block content %}
 <div class="page-header">
   <h1>Gaffelbrødrene</h1>
-  <p class="page-sub">En logg over gode kvelder</p>
+  <p class="page-sub">Brødrenes logg over gode måltider 🍴</p>
 </div>
 
 <!-- Neste kveld -->
 {% if suggestion %}
 <div class="next-card">
-  <div class="next-label">Neste tur</div>
+  <div class="next-label">Neste vert</div>
   <div class="next-name">{{ suggestion.name }}</div>
-  <div class="next-sub">stå for vertskapet</div>
+  <div class="next-sub">skal lage mat til brødrene</div>
   <a href="{{ url_for('ny_kveld') }}" class="btn btn-primary">Registrer ny kveld</a>
 </div>
 {% endif %}
@@ -20,7 +20,7 @@
 <!-- Middagsliste -->
 {% if dinners %}
 <section class="section">
-  <h2 class="section-title">Alle kvelder</h2>
+  <h2 class="section-title">Alle kvelder 🍽️</h2>
   <div class="dinner-list">
     {% for d in dinners %}
     <a href="{{ url_for('kveld', dinner_id=d.id) }}" class="dinner-card">
@@ -47,7 +47,7 @@
 <div class="empty-state">
   <div class="empty-icon">🍽️</div>
   <p>Ingen kvelder registrert ennå.<br>
-  <a href="{{ url_for('ny_kveld') }}">Registrer den første!</a></p>
+  <a href="{{ url_for('ny_kveld') }}">Start historien til Gaffelbrødrene!</a></p>
 </div>
 {% endif %}
 {% endblock %}

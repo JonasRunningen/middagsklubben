@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-header">
   <h1>Medlemmer</h1>
-  <p class="page-sub">Rotasjonsrekkefølge for vertskap</p>
+  <p class="page-sub">Brødrene og rotasjonen for vertskap</p>
 </div>
 
 <div class="members-layout">
@@ -20,7 +20,7 @@
         <span class="rotation-num">{{ loop.index }}</span>
         <span class="rotation-name">{{ m.name }}</span>
         <span class="rotation-dinners muted">
-          {{ m.dinners_hosted.count() }} middager
+          {{ m.dinners_hosted.count() }} kvelder
         </span>
         <div class="rotation-actions">
           {% if m.is_admin %}<span class="admin-badge" title="Administrator">👑</span>{% endif %}

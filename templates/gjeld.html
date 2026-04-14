@@ -5,7 +5,7 @@
 <div class="page-header">
   <div>
     <h1>🍽️ Hvem skylder hvem</h1>
-    <p class="page-sub">Logg bytte av vertskap og ubetalte middager</p>
+    <p class="page-sub">Hold styr på hvem som skylder hvem en kveld som vert</p>
   </div>
 </div>
 
@@ -24,7 +24,7 @@
           <strong>{{ d.debtor.name }}</strong>
           <span class="muted"> skylder </span>
           <strong>{{ d.creditor.name }}</strong>
-          <span class="muted"> en middag</span>
+          <span class="muted"> en kveld som vert</span>
         </div>
         {% if d.note %}<div class="debt-note muted">{{ d.note }}</div>{% endif %}
         <div class="debt-date muted">Registrert {{ d.created_at.strftime('%d. %b %Y') }}</div>

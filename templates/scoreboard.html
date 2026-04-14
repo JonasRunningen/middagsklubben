@@ -4,13 +4,13 @@
 {% block content %}
 <div class="page-header">
   <h1>🏆 Scoreboard</h1>
-  <p class="page-sub">Rangert etter totalt antall stjerner mottatt fra andre</p>
+  <p class="page-sub">Hvem er Gaffelbrødrenes beste kokk?</p>
 </div>
 
 {% if not scores or scores | selectattr('total', 'gt', 0) | list | length == 0 %}
   <div class="card" style="text-align:center; padding: 48px; color: var(--muted);">
     <p style="font-size:2rem; margin-bottom:12px;">🍽️</p>
-    <p>Ingen score registrert ennå. Start med å gi poeng etter neste middag!</p>
+    <p>Ingen score registrert ennå. Start med å gi poeng etter neste kveld!</p>
   </div>
 {% else %}
 
