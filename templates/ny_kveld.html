@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Ny kveld – Middagsklubben{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Registrer ny kveld</h1>
+</div>
+
+<form method="post" class="form-card" id="dinnerForm">
+
+  <!-- Grunninfo -->
+  <fieldset class="fieldset">
+    <legend>Kvelden</legend>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="date">Dato</label>
+        <input type="date" id="date" name="date" value="{{ today }}" required class="input" />
+      </div>
+      <div class="form-group">
+        <label for="category">Kategori / nasjonalitet</label>
+        <input type="text" id="category" name="category" placeholder="f.eks. Italiensk, Asiatisk, Norsk…" class="input" />
+      </div>
+    </div>
+  </fieldset>
+
+  <!-- Roller -->
+  <fieldset class="fieldset">
+    <legend>Roller</legend>
+    <div class="form-row form-row-3">
+      <div class="form-group">
+        <label for="host_id">Hovedvert / -kok</label>
+        <select id="host_id" name="host_id" class="input">
+          <option value="">— Velg —</option>
+          {% for m in members %}
+            <option value="{{ m.id }}" {{ 'selected' if suggestion and m.id == suggestion.id }}>
+              {{ m.name }}{% if suggestion and m.id == suggestion.id %} (foreslått){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="forrett_cook_id">Forrett-ansvarlig</label>
+        <select id="forrett_cook_id" name="forrett_cook_id" class="input">
+          <option value="">— Valgfritt —</option>
+          {% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="dessert_cook_id">Dessert/drink-ansvarlig</label>
+        <select id="dessert_cook_id" name="dessert_cook_id" class="input">
+          <option value="">— Valgfritt —</option>
+          {% for m in members %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+  </fieldset>
+
+  <!-- Meny -->
+  <fieldset class="fieldset">
+    <legend>Meny</legend>
+    <div class="form-group">
+      <label for="forrett">Forrett</label>
+      <input type="text" id="forrett" name="forrett" placeholder="Beskriv forretten…" class="input" />
+    </div>
+    <div class="form-group">
+      <label for="hovedrett">Hovedrett</label>
+      <input type="text" id="hovedrett" name="hovedrett" placeholder="Beskriv hovedretten…" class="input" />
+    </div>
+    <div class="form-group">
+      <label for="dessert">Dessert</label>
+      <input type="text" id="dessert" name="dessert" placeholder="Beskriv desserten…" class="input" />
+    </div>
+  </fieldset>
+
+  <!-- Drikke -->
+  <fieldset class="fieldset">
+    <legend>Vin / øl</legend>
+    <div id="drinks-container"></div>
+    <button type="button" class="btn btn-outline" onclick="addDrink()">+ Legg til drikke</button>
+  </fieldset>
+
+  <!-- Notater -->
+  <fieldset class="fieldset">
+    <legend>Notater fra kvelden</legend>
+    <div class="form-group">
+      <textarea name="notes" rows="4" class="input textarea" placeholder="Stemning, morsomme historier, hva som funket bra…"></textarea>
+    </div>
+  </fieldset>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Lagre kveld</button>
+    <a href="{{ url_for('index') }}" class="btn btn-ghost">Avbryt</a>
+  </div>
+</form>
+
+<template id="drink-template">
+  <div class="drink-entry">
+    <div class="drink-header">
+      <span class="drink-num"></span>
+      <button type="button" class="btn-remove" onclick="this.closest('.drink-entry').remove()">✕</button>
+    </div>
+    <div class="form-row form-row-3">
+      <div class="form-group">
+        <label>Type</label>
+        <select name="drink_type[]" class="input">
+          <option value="vin">Vin 🍷</option>
+          <option value="øl">Øl 🍺</option>
+          <option value="annet">Annet</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:2">
+        <label>Navn</label>
+        <input type="text" name="drink_name[]" class="input" placeholder="f.eks. Barolo Riserva" />
+      </div>
+      <div class="form-group" style="flex:0 0 90px">
+        <label>Årgang</label>
+        <input type="number" name="drink_year[]" class="input" placeholder="2019" min="1900" max="2099" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Druetype / øltype</label>
+        <input type="text" name="drink_grape[]" class="input" placeholder="f.eks. Nebbiolo, IPA" />
+      </div>
+      <div class="form-group" style="flex:2">
+        <label>Smaksnotater</label>
+        <input type="text" name="drink_notes[]" class="input" placeholder="Tørr, kraftig, med hint av mørke bær…" />
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+  let drinkCount = 0;
+
+  function addDrink() {
+    drinkCount++;
+    const tmpl  = document.getElementById('drink-template');
+    const clone = tmpl.content.cloneNode(true);
+    clone.querySelector('.drink-num').textContent = `Drikke ${drinkCount}`;
+    document.getElementById('drinks-container').appendChild(clone);
+  }
+
+  // Start med én drink-rad
+  addDrink();
+</script>
+{% endblock %}

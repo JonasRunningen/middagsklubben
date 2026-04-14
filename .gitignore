@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv
+venv/
+*.db
+static/uploads/*
+!static/uploads/.gitkeep
+instance/
+.DS_Store

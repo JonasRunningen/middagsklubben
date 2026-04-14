@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}{{ dinner.date.strftime('%d. %b %Y') }} – Middagsklubben{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-eyebrow">{{ dinner.date.strftime('%A %d. %B %Y')|capitalize }}</div>
+    <h1>{{ dinner.host.name if dinner.host else 'Ukjent vert' }}s kveld</h1>
+    {% if dinner.category %}<p class="page-sub">{{ dinner.category }}</p>{% endif %}
+  </div>
+  <div class="page-header-actions">
+    {% if dinner.avg_score %}
+      <div class="score-big">{{ dinner.avg_score }} <span>/ 5</span></div>
+    {% endif %}
+    <form method="post" action="{{ url_for('slett_kveld', dinner_id=dinner.id) }}"
+          onsubmit="return confirm('Slett denne kvelden?')">
+      <button class="btn btn-danger-outline">Slett kveld</button>
+    </form>
+  </div>
+</div>
+
+<div class="kveld-grid">
+
+  <!-- LEFT: meny, drikke, notater -->
+  <div class="kveld-main">
+
+    <!-- Meny -->
+    <div class="card">
+      <h2 class="card-title">Meny</h2>
+      <div class="menu-list">
+        {% if dinner.forrett %}
+        <div class="menu-item">
+          <span class="menu-label">Forrett</span>
+          <span class="menu-val">{{ dinner.forrett }}</span>
+          {% if dinner.forrett_cook %}<span class="menu-chef">av {{ dinner.forrett_cook.name }}</span>{% endif %}
+        </div>
+        {% endif %}
+        {% if dinner.hovedrett %}
+        <div class="menu-item">
+          <span class="menu-label">Hovedrett</span>
+          <span class="menu-val">{{ dinner.hovedrett }}</span>
+          {% if dinner.host %}<span class="menu-chef">av {{ dinner.host.name }}</span>{% endif %}
+        </div>
+        {% endif %}
+        {% if dinner.dessert %}
+        <div class="menu-item">
+          <span class="menu-label">Dessert</span>
+          <span class="menu-val">{{ dinner.dessert }}</span>
+          {% if dinner.dessert_cook %}<span class="menu-chef">av {{ dinner.dessert_cook.name }}</span>{% endif %}
+        </div>
+        {% endif %}
+        {% if not dinner.forrett and not dinner.hovedrett and not dinner.dessert %}
+          <p class="muted">Ingen menybeskrivelse.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Drikke -->
+    {% if drinks %}
+    <div class="card">
+      <h2 class="card-title">Vin & øl</h2>
+      <div class="drinks-list">
+        {% for d in drinks %}
+        <div class="drink-card">
+          <div class="drink-icon">{{ '🍷' if d.type == 'vin' else ('🍺' if d.type == 'øl' else '🥂') }}</div>
+          <div class="drink-info">
+            <div class="drink-name">{{ d.name }}{% if d.year %} <span class="drink-year">{{ d.year }}</span>{% endif %}</div>
+            {% if d.grape_type %}<div class="drink-grape">{{ d.grape_type }}</div>{% endif %}
+            {% if d.tasting_notes %}<div class="drink-notes muted">{{ d.tasting_notes }}</div>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Notater -->
+    {% if dinner.notes %}
+    <div class="card">
+      <h2 class="card-title">Notater</h2>
+      <p class="notes-text">{{ dinner.notes }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Bilder -->
+    <div class="card">
+      <h2 class="card-title">Bilder</h2>
+      {% if photos %}
+      <div class="photo-grid">
+        {% for photo in photos %}
+        <div class="photo-wrap">
+          <a href="{{ url_for('static', filename='uploads/' ~ photo.filename) }}" target="_blank">
+            <img src="{{ url_for('static', filename='uploads/' ~ photo.filename) }}" alt="Bilde fra kvelden" />
+          </a>
+          <form method="post" action="{{ url_for('slett_foto', dinner_id=dinner.id, photo_id=photo.id) }}">
+            <button class="photo-delete" title="Slett bilde">✕</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+        <p class="muted">Ingen bilder ennå.</p>
+      {% endif %}
+      <form method="post" action="{{ url_for('upload_foto', dinner_id=dinner.id) }}"
+            enctype="multipart/form-data" class="upload-form">
+        <label class="upload-label">
+          <input type="file" name="photos" accept="image/*" multiple onchange="this.form.submit()" />
+          <span class="btn btn-outline">📷 Last opp bilder</span>
+        </label>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: scores -->
+  <aside class="kveld-aside">
+    <div class="card">
+      <h2 class="card-title">Poenggiving</h2>
+      {% for member in members %}
+      {% set sc = score_map.get(member.id) %}
+      <div class="score-row">
+        <div class="score-member">{{ member.name }}</div>
+        <form method="post" action="{{ url_for('add_score', dinner_id=dinner.id) }}" class="score-form">
+          <input type="hidden" name="member_id" value="{{ member.id }}" />
+          <div class="star-row" data-selected="{{ sc.score if sc and sc.score else 0 }}">
+            {% for i in range(1, 6) %}
+            <button type="button" class="star {{ 'filled' if sc and sc.score and i <= sc.score }}"
+                    data-val="{{ i }}" onclick="setStar(this)">★</button>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="score" class="score-val" value="{{ sc.score if sc and sc.score else '' }}" />
+          <textarea name="comment" class="input textarea score-comment" rows="2"
+                    placeholder="Kommentar (valgfritt)">{{ sc.comment if sc and sc.comment else '' }}</textarea>
+          <button type="submit" class="btn btn-sm btn-primary">Lagre</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </aside>
+
+</div>
+
+<script>
+function setStar(btn) {
+  const row   = btn.closest('.star-row');
+  const val   = parseInt(btn.dataset.val);
+  const stars = row.querySelectorAll('.star');
+  stars.forEach((s, i) => s.classList.toggle('filled', i < val));
+  row.closest('form').querySelector('.score-val').value = val;
+}
+</script>
+{% endblock %}

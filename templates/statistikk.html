@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Statistikk – Middagsklubben{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Statistikk</h1>
+</div>
+
+<!-- Top stats -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon">🍽️</div>
+    <div class="stat-num">{{ total_dinners }}</div>
+    <div class="stat-label">Middager totalt</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🍷</div>
+    <div class="stat-num">{{ total_drinks }}</div>
+    <div class="stat-label">Flasker vin/øl</div>
+  </div>
+  {% if best_dinner %}
+  <div class="stat-card stat-card-accent">
+    <div class="stat-icon">🏆</div>
+    <div class="stat-num">{{ best_score }}</div>
+    <div class="stat-label">Beste score</div>
+    <div class="stat-sub">
+      <a href="{{ url_for('kveld', dinner_id=best_dinner.id) }}">
+        {{ best_dinner.host.name if best_dinner.host else '—' }},
+        {{ best_dinner.date.strftime('%d. %b %Y') }}
+      </a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="stats-two-col">
+
+  <!-- Middager per person -->
+  <div class="card">
+    <h2 class="card-title">Middager per person</h2>
+    <table class="stats-table">
+      <thead><tr><th>Navn</th><th>Antall</th><th></th></tr></thead>
+      <tbody>
+        {% set max_d = dinners_per_member[0][1] if dinners_per_member else 1 %}
+        {% for name, count in dinners_per_member %}
+        <tr>
+          <td>{{ name }}</td>
+          <td class="num">{{ count }}</td>
+          <td class="bar-cell">
+            <div class="bar" style="width: {{ (count / max_d * 100)|int }}%"></div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Gjennomsnittsscore per person -->
+  <div class="card">
+    <h2 class="card-title">Snittpoeng per person</h2>
+    {% if avg_score_per_member %}
+    <table class="stats-table">
+      <thead><tr><th>Navn</th><th>Snitt</th><th></th></tr></thead>
+      <tbody>
+        {% set max_s = avg_score_per_member[0][1] if avg_score_per_member else 5 %}
+        {% for name, avg in avg_score_per_member %}
+        <tr>
+          <td>{{ name }}</td>
+          <td class="num">{{ avg }}</td>
+          <td class="bar-cell">
+            <div class="bar bar-gold" style="width: {{ (avg / 5 * 100)|int }}%"></div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="muted">Ingen poenggivning ennå.</p>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Siste kvelder -->
+{% if recent_dinners %}
+<div class="card" style="margin-top: 24px">
+  <h2 class="card-title">Siste kvelder</h2>
+  <div class="dinner-list">
+    {% for d in recent_dinners %}
+    <a href="{{ url_for('kveld', dinner_id=d.id) }}" class="dinner-card">
+      <div class="dinner-card-date">{{ d.date.strftime('%d. %b %Y') }}</div>
+      <div class="dinner-card-body">
+        <div class="dinner-card-host">{{ d.host.name if d.host else '—' }}</div>
+        {% if d.category %}<div class="dinner-card-cat">{{ d.category }}</div>{% endif %}
+      </div>
+      <div class="dinner-card-right">
+        {% if d.avg_score %}<div class="score-badge">{{ d.avg_score }} ★</div>{% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

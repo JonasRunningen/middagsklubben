@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Middagsklubben{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="{{ url_for('index') }}" class="site-logo">
+        <span class="logo-icon">🍷</span>
+        <span class="logo-text">Middagsklubben</span>
+      </a>
+      <nav class="main-nav">
+        <a href="{{ url_for('index') }}"       class="{{ 'active' if request.endpoint == 'index' }}">Oversikt</a>
+        <a href="{{ url_for('ny_kveld') }}"    class="{{ 'active' if request.endpoint == 'ny_kveld' }}">+ Ny kveld</a>
+        <a href="{{ url_for('statistikk') }}"  class="{{ 'active' if request.endpoint == 'statistikk' }}">Statistikk</a>
+        <a href="{{ url_for('medlemmer') }}"   class="{{ 'active' if request.endpoint == 'medlemmer' }}">Medlemmer</a>
+      </nav>
+      <button class="hamburger" onclick="document.querySelector('.mobile-nav').classList.toggle('open')">☰</button>
+    </div>
+    <nav class="mobile-nav">
+      <a href="{{ url_for('index') }}">Oversikt</a>
+      <a href="{{ url_for('ny_kveld') }}">+ Ny kveld</a>
+      <a href="{{ url_for('statistikk') }}">Statistikk</a>
+      <a href="{{ url_for('medlemmer') }}">Medlemmer</a>
+    </nav>
+  </header>
+
+  <main class="site-main">
+    <div class="container">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>🍷 Middagsklubben</span>
+    </div>
+  </footer>
+
+</body>
+</html>

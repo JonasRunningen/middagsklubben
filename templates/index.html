@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Oversikt – Middagsklubben{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Middagsklubben</h1>
+  <p class="page-sub">En logg over gode kvelder</p>
+</div>
+
+<!-- Neste kveld -->
+{% if suggestion %}
+<div class="next-card">
+  <div class="next-label">Neste tur</div>
+  <div class="next-name">{{ suggestion.name }}</div>
+  <div class="next-sub">stå for vertskapet</div>
+  <a href="{{ url_for('ny_kveld') }}" class="btn btn-primary">Registrer ny kveld</a>
+</div>
+{% endif %}
+
+<!-- Middagsliste -->
+{% if dinners %}
+<section class="section">
+  <h2 class="section-title">Alle kvelder</h2>
+  <div class="dinner-list">
+    {% for d in dinners %}
+    <a href="{{ url_for('kveld', dinner_id=d.id) }}" class="dinner-card">
+      <div class="dinner-card-date">{{ d.date.strftime('%d. %b %Y') }}</div>
+      <div class="dinner-card-body">
+        <div class="dinner-card-host">{{ d.host.name if d.host else '—' }}</div>
+        {% if d.category %}<div class="dinner-card-cat">{{ d.category }}</div>{% endif %}
+        {% if d.hovedrett %}<div class="dinner-card-menu">{{ d.hovedrett }}</div>{% endif %}
+      </div>
+      <div class="dinner-card-right">
+        {% if d.avg_score %}
+          <div class="score-badge">{{ d.avg_score }} ★</div>
+        {% endif %}
+        {% set ph = d.photos.first() %}
+        {% if ph %}
+          <img src="{{ url_for('static', filename='uploads/' ~ ph.filename) }}" class="dinner-thumb" alt="" />
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">🍽️</div>
+  <p>Ingen kvelder registrert ennå.<br>
+  <a href="{{ url_for('ny_kveld') }}">Registrer den første!</a></p>
+</div>
+{% endif %}
+{% endblock %}

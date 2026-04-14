@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Medlemmer – Middagsklubben{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Medlemmer</h1>
+  <p class="page-sub">Rotasjonsrekkefølge for vertskap</p>
+</div>
+
+<div class="members-layout">
+
+  <!-- Rotasjonsliste -->
+  <div class="card members-card">
+    <h2 class="card-title">Rotasjon</h2>
+    {% if members %}
+    <ol class="rotation-list">
+      {% for m in members %}
+      {% if m.active %}
+      <li class="rotation-item">
+        <span class="rotation-num">{{ loop.index }}</span>
+        <span class="rotation-name">{{ m.name }}</span>
+        <span class="rotation-dinners muted">
+          {{ m.dinners_hosted.count() }} middager
+        </span>
+        <div class="rotation-actions">
+          <form method="post" action="{{ url_for('flytt_medlem', member_id=m.id) }}" style="display:inline">
+            <input type="hidden" name="direction" value="opp" />
+            <button class="btn-icon" title="Flytt opp" {{ 'disabled' if loop.first }}>▲</button>
+          </form>
+          <form method="post" action="{{ url_for('flytt_medlem', member_id=m.id) }}" style="display:inline">
+            <input type="hidden" name="direction" value="ned" />
+            <button class="btn-icon" title="Flytt ned" {{ 'disabled' if loop.last }}>▼</button>
+          </form>
+          <form method="post" action="{{ url_for('slett_medlem', member_id=m.id) }}"
+                onsubmit="return confirm('Fjerne {{ m.name }} fra rotasjonen?')" style="display:inline">
+            <button class="btn-icon btn-icon-danger" title="Fjern">✕</button>
+          </form>
+        </div>
+      </li>
+      {% endif %}
+      {% endfor %}
+    </ol>
+    {% else %}
+      <p class="muted">Ingen aktive medlemmer ennå.</p>
+    {% endif %}
+  </div>
+
+  <!-- Legg til nytt medlem -->
+  <div class="card add-member-card">
+    <h2 class="card-title">Legg til medlem</h2>
+    <form method="post" action="{{ url_for('legg_til_medlem') }}" class="add-form">
+      <div class="form-group">
+        <label for="name">Navn</label>
+        <input type="text" id="name" name="name" class="input" placeholder="Fullt navn" required autofocus />
+      </div>
+      <button type="submit" class="btn btn-primary">Legg til</button>
+    </form>
+
+    <!-- Inactive members -->
+    {% set inactive = members | selectattr('active', 'equalto', false) | list %}
+    {% if inactive %}
+    <div style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px;">
+      <h3 class="card-title" style="font-size:0.82rem;">Inaktive</h3>
+      <ul class="inactive-list">
+        {% for m in inactive %}
+        <li>{{ m.name }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
