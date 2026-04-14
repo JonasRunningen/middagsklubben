@@ -205,7 +205,7 @@ def ny_kveld():
             db.session.add(drink)
 
         db.session.commit()
-        flash('Ny kveld er registrert! 🍷', 'success')
+        flash('Ny kveld er registrert! 🍴', 'success')
         return redirect(url_for('kveld', dinner_id=dinner.id))
 
     return render_template('ny_kveld.html', members=members, suggestion=suggestion,
