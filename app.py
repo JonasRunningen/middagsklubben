@@ -497,6 +497,129 @@ def scoreboard():
     return render_template('scoreboard.html', scores=scores)
 
 
+# ── Min side ─────────────────────────────────────────────────────────────────
+
+@app.route('/min-side')
+def min_side():
+    member_id = session.get('member_id')
+    member = Member.query.get_or_404(member_id)
+
+    # --- Scoreboard rank ---
+    all_members = Member.query.filter_by(active=True).all()
+    all_scores = []
+    for m in all_members:
+        total = db.session.query(func.sum(Score.score)).join(
+            Dinner, Score.dinner_id == Dinner.id
+        ).filter(
+            Dinner.host_id == m.id,
+            Score.member_id != m.id,
+            Score.score.isnot(None)
+        ).scalar() or 0
+        all_scores.append((m.id, total))
+    all_scores.sort(key=lambda x: -x[1])
+    rank = next((i + 1 for i, (mid, _) in enumerate(all_scores) if mid == member_id), None)
+    my_total_stars = next((t for mid, t in all_scores if mid == member_id), 0)
+
+    # --- Stars received (avg from others on my hosted dinners) ---
+    my_hosted_dinners = Dinner.query.filter_by(host_id=member_id).all()
+    hosted_ids = [d.id for d in my_hosted_dinners]
+
+    received_scores = db.session.query(Score.score).filter(
+        Score.dinner_id.in_(hosted_ids),
+        Score.member_id != member_id,
+        Score.score.isnot(None)
+    ).all() if hosted_ids else []
+    received_vals = [s[0] for s in received_scores]
+    avg_received = round(sum(received_vals) / len(received_vals), 1) if received_vals else None
+
+    # --- Scores I have given (avg) ---
+    given_scores = db.session.query(Score.score).filter(
+        Score.member_id == member_id,
+        Score.score.isnot(None)
+    ).all()
+    given_vals = [s[0] for s in given_scores]
+    avg_given = round(sum(given_vals) / len(given_vals), 1) if given_vals else None
+
+    # --- Strictness label ---
+    strictness = None
+    if avg_given is not None:
+        if avg_given >= 8.5:
+            strictness = ('Mild dommer', '😇')
+        elif avg_given >= 7:
+            strictness = ('Rettferdig dommer', '⚖️')
+        elif avg_given >= 5.5:
+            strictness = ('Streng dommer', '🧐')
+        else:
+            strictness = ('Knallhard dommer', '😤')
+
+    # --- Participation ---
+    all_dinners = Dinner.query.order_by(Dinner.date.desc()).all()
+    participated = []
+    for d in all_dinners:
+        scored = Score.query.filter_by(dinner_id=d.id, member_id=member_id).first()
+        if scored or d.host_id == member_id:
+            participated.append(d)
+
+    # --- My hosted dinners with their avg score ---
+    hosted_with_scores = []
+    for d in my_hosted_dinners:
+        hosted_with_scores.append({'dinner': d, 'avg': d.avg_score})
+    hosted_with_scores.sort(key=lambda x: x['dinner'].date, reverse=True)
+
+    # --- My given scores with comments ---
+    my_scores = db.session.query(Score, Dinner).join(
+        Dinner, Score.dinner_id == Dinner.id
+    ).filter(
+        Score.member_id == member_id,
+        Score.score.isnot(None)
+    ).order_by(Dinner.date.desc()).all()
+
+    # --- Debt ---
+    my_debts = HostDebt.query.filter_by(debtor_id=member_id, settled=False).all()
+    my_credits = HostDebt.query.filter_by(creditor_id=member_id, settled=False).all()
+
+    return render_template('min_side.html',
+        member=member,
+        rank=rank,
+        total_members=len(all_scores),
+        my_total_stars=my_total_stars,
+        avg_received=avg_received,
+        avg_given=avg_given,
+        strictness=strictness,
+        hosted_count=len(my_hosted_dinners),
+        participated_count=len(participated),
+        hosted_dinners=hosted_with_scores,
+        my_scores=my_scores,
+        my_debts=my_debts,
+        my_credits=my_credits,
+    )
+
+
+@app.route('/min-side/bytt-passord', methods=['POST'])
+def bytt_passord():
+    member_id = session.get('member_id')
+    member = Member.query.get_or_404(member_id)
+
+    current  = request.form.get('current_password', '')
+    new_pw   = request.form.get('new_password', '').strip()
+    confirm  = request.form.get('confirm_password', '').strip()
+
+    if not member.password_hash or not check_password_hash(member.password_hash, current):
+        flash('Nåværende passord er feil.', 'error')
+        return redirect(url_for('min_side'))
+    if len(new_pw) < 4:
+        flash('Passord må være minst 4 tegn.', 'error')
+        return redirect(url_for('min_side'))
+    if new_pw != confirm:
+        flash('Passordene stemmer ikke overens.', 'error')
+        return redirect(url_for('min_side'))
+
+    member.password_hash = generate_password_hash(new_pw, method='pbkdf2:sha256')
+    db.session.commit()
+    flash('Passord oppdatert! 🎉', 'success')
+    return redirect(url_for('min_side'))
+
+
 # ── Quotes ────────────────────────────────────────────────────────────────────
 
 @app.route('/kveld/<int:dinner_id>/sitat', methods=['POST'])

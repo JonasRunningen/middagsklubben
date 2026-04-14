@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Min side – Middagsklubben{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Min side</h1>
+  <p class="page-sub">Hei, {{ member.name.split()[0] }}! Her er din oversikt.</p>
+</div>
+
+<div class="profile-grid">
+
+  {# ── Venstre kolonne ── #}
+  <div class="profile-left">
+
+    {# Profilkort #}
+    <div class="card profile-card">
+      <div class="profile-avatar">{{ member.name[0] }}</div>
+      <div class="profile-name">{{ member.name }}</div>
+      <div class="profile-username muted">@{{ member.username or '—' }}</div>
+      {% if member.is_admin %}<div class="profile-admin-badge">👑 Administrator</div>{% endif %}
+
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <span class="profile-stat-num">
+            {% if rank %}#{{ rank }}{% else %}—{% endif %}
+          </span>
+          <span class="profile-stat-label">Scoreboard</span>
+        </div>
+        <div class="profile-stat">
+          <span class="profile-stat-num">⭐ {{ my_total_stars }}</span>
+          <span class="profile-stat-label">Totale stjerner</span>
+        </div>
+        <div class="profile-stat">
+          <span class="profile-stat-num">{{ hosted_count }}</span>
+          <span class="profile-stat-label">Kvelder som vert</span>
+        </div>
+        <div class="profile-stat">
+          <span class="profile-stat-num">{{ participated_count }}</span>
+          <span class="profile-stat-label">Kvelder deltatt</span>
+        </div>
+      </div>
+
+      {% if avg_received or avg_given %}
+      <div class="profile-avg-row">
+        {% if avg_received %}
+        <div class="profile-avg-box profile-avg-received">
+          <span class="profile-avg-num">{{ avg_received }}</span>
+          <span class="profile-avg-label">Snitt mottatt</span>
+        </div>
+        {% endif %}
+        {% if avg_given %}
+        <div class="profile-avg-box profile-avg-given">
+          <span class="profile-avg-num">{{ avg_given }}</span>
+          <span class="profile-avg-label">Snitt gitt</span>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if strictness %}
+      <div class="profile-strictness">
+        <span>{{ strictness[1] }}</span>
+        <strong>{{ strictness[0] }}</strong>
+      </div>
+      {% endif %}
+    </div>
+
+    {# Gjeld #}
+    {% if my_debts or my_credits %}
+    <div class="card">
+      <h2 class="card-title">Gjeld</h2>
+      {% if my_debts %}
+        <p class="muted" style="font-size:0.82rem; margin-bottom:8px;">Du skylder:</p>
+        <ul class="debt-list">
+          {% for d in my_debts %}
+          <li>🔴 Du skylder <strong>{{ d.creditor.name }}</strong> en kveld{% if d.note %} <span class="muted">({{ d.note }})</span>{% endif %}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      {% if my_credits %}
+        <p class="muted" style="font-size:0.82rem; margin-bottom:8px; margin-top:12px;">Har til gode:</p>
+        <ul class="debt-list">
+          {% for d in my_credits %}
+          <li>🟢 <strong>{{ d.debtor.name }}</strong> skylder deg en kveld{% if d.note %} <span class="muted">({{ d.note }})</span>{% endif %}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# Bytt passord #}
+    <div class="card">
+      <h2 class="card-title">Bytt passord</h2>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+      <form method="POST" action="{{ url_for('bytt_passord') }}" class="password-form">
+        <div class="form-group">
+          <label>Nåværende passord</label>
+          <input type="password" name="current_password" class="input" required autocomplete="current-password" />
+        </div>
+        <div class="form-group">
+          <label>Nytt passord</label>
+          <input type="password" name="new_password" class="input" required autocomplete="new-password" minlength="4" />
+        </div>
+        <div class="form-group">
+          <label>Bekreft nytt passord</label>
+          <input type="password" name="confirm_password" class="input" required autocomplete="new-password" minlength="4" />
+        </div>
+        <button type="submit" class="btn btn-primary">Oppdater passord</button>
+      </form>
+    </div>
+
+  </div>
+
+  {# ── Høyre kolonne ── #}
+  <div class="profile-right">
+
+    {# Mine kvelder som vert #}
+    <div class="card">
+      <h2 class="card-title">Mine kvelder som vert</h2>
+      {% if hosted_dinners %}
+      <div class="hosted-list">
+        {% for item in hosted_dinners %}
+        <a href="{{ url_for('kveld', dinner_id=item.dinner.id) }}" class="hosted-item">
+          <div class="hosted-info">
+            <span class="hosted-date">{{ item.dinner.date.strftime('%d. %b %Y') }}</span>
+            <span class="hosted-menu">
+              {% if item.dinner.hovedrett %}{{ item.dinner.hovedrett }}{% else %}<em class="muted">Ingen meny registrert</em>{% endif %}
+            </span>
+          </div>
+          <div class="hosted-score">
+            {% if item.avg %}
+            <span class="hosted-avg">⭐ {{ item.avg }}</span>
+            {% else %}
+            <span class="muted" style="font-size:0.8rem">Ingen score</span>
+            {% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="muted">Du har ikke vært vert ennå.</p>
+      {% endif %}
+    </div>
+
+    {# Mine vurderinger #}
+    <div class="card">
+      <h2 class="card-title">Mine vurderinger</h2>
+      {% if my_scores %}
+      <table class="score-table">
+        <thead>
+          <tr>
+            <th>Kveld</th>
+            <th>Score</th>
+            <th>Kommentar</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for score, dinner in my_scores %}
+          <tr>
+            <td>
+              <a href="{{ url_for('kveld', dinner_id=dinner.id) }}">
+                {{ dinner.date.strftime('%d. %b %Y') }}
+                {% if dinner.host %}<span class="muted"> · {{ dinner.host.name.split()[0] }}</span>{% endif %}
+              </a>
+            </td>
+            <td><strong>{{ score.score }}/10</strong></td>
+            <td class="muted" style="font-size:0.85rem">{{ score.comment or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="muted">Du har ikke gitt noen vurderinger ennå.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

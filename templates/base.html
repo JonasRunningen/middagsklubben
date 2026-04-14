@@ -36,9 +36,9 @@
       <button class="funny-btn" id="funnyBtn" title="🌭" onclick="polseRegn()">🌭</button>
       <button class="dark-toggle" id="darkToggle" title="Bytt tema" onclick="toggleDark()">🌙</button>
       {% if session.get('member_name') %}
-      <span class="logged-in-user" title="Innlogget som {{ session.get('member_name') }}">
+      <a href="{{ url_for('min_side') }}" class="logged-in-user" title="Min side">
         {{ session.get('member_name').split()[0] }}{% if session.get('is_admin') %} 👑{% endif %}
-      </span>
+      </a>
       {% endif %}
       <a href="{{ url_for('logg_ut') }}" class="logout-btn" title="Logg ut">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
