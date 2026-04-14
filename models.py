@@ -10,6 +10,7 @@ class Member(db.Model):
     name         = db.Column(db.String(100), nullable=False)
     order_index  = db.Column(db.Integer, default=0)
     active       = db.Column(db.Boolean, default=True)
+    is_admin     = db.Column(db.Boolean, default=False)
 
     dinners_hosted = db.relationship('Dinner', foreign_keys='Dinner.host_id',
                                      backref='host', lazy='dynamic')

@@ -36,6 +36,19 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 with app.app_context():
     db.create_all()
+    # Add is_admin column if it doesn't exist (upgrade existing DB)
+    from sqlalchemy import inspect, text
+    inspector = inspect(db.engine)
+    cols = [c['name'] for c in inspector.get_columns('members')]
+    if 'is_admin' not in cols:
+        with db.engine.connect() as conn:
+            conn.execute(text('ALTER TABLE members ADD COLUMN is_admin BOOLEAN DEFAULT 0'))
+            conn.commit()
+    # Ensure Jonas Runningen is admin
+    jonas = Member.query.filter(Member.name.ilike('%Jonas Runningen%')).first()
+    if jonas and not jonas.is_admin:
+        jonas.is_admin = True
+        db.session.commit()
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -53,15 +66,22 @@ def login_required(f):
 def login():
     if session.get('logged_in'):
         return redirect(url_for('index'))
+    members = Member.query.filter_by(active=True).order_by(Member.order_index).all()
     if request.method == 'POST':
-        password = request.form.get('password', '')
-        if password == CLUB_PASSWORD:
-            session['logged_in'] = True
-            session.permanent = True
-            next_url = request.args.get('next') or url_for('index')
-            return redirect(next_url)
-        flash('Feil passord. Prøv igjen.', 'error')
-    return render_template('login.html')
+        password  = request.form.get('password', '')
+        member_id = request.form.get('member_id', '')
+        if password == CLUB_PASSWORD and member_id:
+            member = Member.query.get(int(member_id))
+            if member:
+                session['logged_in']  = True
+                session['member_id']  = member.id
+                session['member_name'] = member.name
+                session['is_admin']   = member.is_admin
+                session.permanent     = True
+                next_url = request.args.get('next') or url_for('index')
+                return redirect(next_url)
+        flash('Feil passord eller ugyldig bruker. Prøv igjen.', 'error')
+    return render_template('login.html', members=members)
 
 
 @app.route('/logg_ut')
@@ -76,6 +96,16 @@ def require_login():
     public = {'login', 'static'}
     if request.endpoint not in public and not session.get('logged_in'):
         return redirect(url_for('login', next=request.path))
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('is_admin'):
+            flash('Du må være administrator for å se denne siden.', 'error')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -322,12 +352,14 @@ def statistikk():
 # ── Members ───────────────────────────────────────────────────────────────────
 
 @app.route('/medlemmer')
+@admin_required
 def medlemmer():
     members = Member.query.order_by(Member.order_index).all()
     return render_template('medlemmer.html', members=members)
 
 
 @app.route('/medlemmer/legg_til', methods=['POST'])
+@admin_required
 def legg_til_medlem():
     name = request.form.get('name', '').strip()
     if not name:
@@ -342,6 +374,7 @@ def legg_til_medlem():
 
 
 @app.route('/medlemmer/<int:member_id>/slett', methods=['POST'])
+@admin_required
 def slett_medlem(member_id):
     member = Member.query.get_or_404(member_id)
     member.active = False
@@ -351,6 +384,7 @@ def slett_medlem(member_id):
 
 
 @app.route('/medlemmer/<int:member_id>/flytt', methods=['POST'])
+@admin_required
 def flytt_medlem(member_id):
     direction = request.form.get('direction')
     members   = Member.query.filter_by(active=True).order_by(Member.order_index).all()
@@ -365,6 +399,21 @@ def flytt_medlem(member_id):
         members[idx].order_index, members[idx+1].order_index = \
             members[idx+1].order_index, members[idx].order_index
     db.session.commit()
+    return redirect(url_for('medlemmer'))
+
+
+@app.route('/medlemmer/<int:member_id>/toggle_admin', methods=['POST'])
+@admin_required
+def toggle_admin(member_id):
+    member = Member.query.get_or_404(member_id)
+    # Prevent removing own admin status
+    if member.id == session.get('member_id') and member.is_admin:
+        flash('Du kan ikke fjerne din egen adminstatus.', 'error')
+        return redirect(url_for('medlemmer'))
+    member.is_admin = not member.is_admin
+    db.session.commit()
+    status = 'administrator' if member.is_admin else 'vanlig bruker'
+    flash(f'{member.name} er nå {status}.', 'success')
     return redirect(url_for('medlemmer'))
 
 

@@ -23,6 +23,12 @@
           {{ m.dinners_hosted.count() }} middager
         </span>
         <div class="rotation-actions">
+          {% if m.is_admin %}<span class="admin-badge" title="Administrator">👑</span>{% endif %}
+          <form method="post" action="{{ url_for('toggle_admin', member_id=m.id) }}" style="display:inline">
+            <button class="btn-icon {{ 'btn-icon-active' if m.is_admin }}" title="{{ 'Fjern admin' if m.is_admin else 'Gi admin' }}">
+              {{ '★' if m.is_admin else '☆' }}
+            </button>
+          </form>
           <form method="post" action="{{ url_for('flytt_medlem', member_id=m.id) }}" style="display:inline">
             <input type="hidden" name="direction" value="opp" />
             <button class="btn-icon" title="Flytt opp" {{ 'disabled' if loop.first }}>▲</button>

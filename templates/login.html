@@ -28,13 +28,21 @@
 
       <form method="POST" action="{{ url_for('login', next=request.args.get('next', '')) }}">
         <div class="login-field">
+          <label for="member_id">Hvem er du?</label>
+          <select id="member_id" name="member_id" required>
+            <option value="">— Velg navn —</option>
+            {% for m in members %}
+              <option value="{{ m.id }}">{{ m.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="login-field">
           <label for="password">Passord</label>
           <input
             type="password"
             id="password"
             name="password"
             placeholder="Klubbpassordet..."
-            autofocus
             autocomplete="current-password"
             required
           />
