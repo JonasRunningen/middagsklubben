@@ -216,7 +216,7 @@ def ny_kveld():
 
 @app.route('/kveld/<int:dinner_id>')
 def kveld(dinner_id):
-    dinner  = Dinner.query.get_or_404(dinner_id)
+    dinner  = db.get_or_404(Dinner, dinner_id)
     members = Member.query.filter_by(active=True).order_by(Member.order_index).all()
 
     # Build score map: member_id → Score object
@@ -234,7 +234,7 @@ def kveld(dinner_id):
 
 @app.route('/kveld/<int:dinner_id>/score', methods=['POST'])
 def add_score(dinner_id):
-    dinner    = Dinner.query.get_or_404(dinner_id)
+    dinner    = db.get_or_404(Dinner, dinner_id)
     member_id = int(request.form['member_id'])
     score_val = request.form.get('score', '').strip()
     comment   = request.form.get('comment', '').strip()
@@ -261,7 +261,7 @@ def add_score(dinner_id):
 
 @app.route('/kveld/<int:dinner_id>/foto', methods=['POST'])
 def upload_foto(dinner_id):
-    Dinner.query.get_or_404(dinner_id)
+    db.get_or_404(Dinner, dinner_id)
     files = request.files.getlist('photos')
 
     if not files or all(f.filename == '' for f in files):
@@ -282,7 +282,7 @@ def upload_foto(dinner_id):
 
 @app.route('/kveld/<int:dinner_id>/slett_foto/<int:photo_id>', methods=['POST'])
 def slett_foto(dinner_id, photo_id):
-    photo = Photo.query.get_or_404(photo_id)
+    photo = db.get_or_404(Photo, photo_id)
     if photo.dinner_id != dinner_id:
         abort(403)
     filepath = os.path.join(UPLOAD_FOLDER, photo.filename)
@@ -296,7 +296,7 @@ def slett_foto(dinner_id, photo_id):
 
 @app.route('/kveld/<int:dinner_id>/slett', methods=['POST'])
 def slett_kveld(dinner_id):
-    dinner = Dinner.query.get_or_404(dinner_id)
+    dinner = db.get_or_404(Dinner, dinner_id)
     # Remove photo files
     for photo in dinner.photos:
         filepath = os.path.join(UPLOAD_FOLDER, photo.filename)
@@ -386,7 +386,7 @@ def legg_til_medlem():
 @app.route('/medlemmer/<int:member_id>/slett', methods=['POST'])
 @admin_required
 def slett_medlem(member_id):
-    member = Member.query.get_or_404(member_id)
+    member = db.get_or_404(Member, member_id)
     member.active = False
     db.session.commit()
     flash(f'{member.name} er fjernet fra roteringen.', 'success')
@@ -415,7 +415,7 @@ def flytt_medlem(member_id):
 @app.route('/medlemmer/<int:member_id>/toggle_admin', methods=['POST'])
 @admin_required
 def toggle_admin(member_id):
-    member = Member.query.get_or_404(member_id)
+    member = db.get_or_404(Member, member_id)
     # Prevent removing own admin status
     if member.id == session.get('member_id') and member.is_admin:
         flash('Du kan ikke fjerne din egen adminstatus.', 'error')
@@ -432,7 +432,7 @@ def toggle_admin(member_id):
 @app.route('/medlemmer/<int:member_id>/sett_bruker', methods=['POST'])
 @admin_required
 def sett_bruker(member_id):
-    member   = Member.query.get_or_404(member_id)
+    member   = db.get_or_404(Member, member_id)
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
 
@@ -502,7 +502,7 @@ def scoreboard():
 @app.route('/min-side')
 def min_side():
     member_id = session.get('member_id')
-    member = Member.query.get_or_404(member_id)
+    member = db.get_or_404(Member, member_id)
 
     # --- Scoreboard rank ---
     all_members = Member.query.filter_by(active=True).all()
@@ -598,7 +598,7 @@ def min_side():
 @app.route('/min-side/bytt-passord', methods=['POST'])
 def bytt_passord():
     member_id = session.get('member_id')
-    member = Member.query.get_or_404(member_id)
+    member = db.get_or_404(Member, member_id)
 
     current  = request.form.get('current_password', '')
     new_pw   = request.form.get('new_password', '').strip()
@@ -624,7 +624,7 @@ def bytt_passord():
 
 @app.route('/kveld/<int:dinner_id>/sitat', methods=['POST'])
 def legg_til_sitat(dinner_id):
-    Dinner.query.get_or_404(dinner_id)
+    db.get_or_404(Dinner, dinner_id)
     text      = request.form.get('text', '').strip()
     member_id = request.form.get('member_id') or None
     if text:
@@ -637,7 +637,7 @@ def legg_til_sitat(dinner_id):
 
 @app.route('/kveld/<int:dinner_id>/sitat/<int:quote_id>/slett', methods=['POST'])
 def slett_sitat(dinner_id, quote_id):
-    q = Quote.query.get_or_404(quote_id)
+    q = db.get_or_404(Quote, quote_id)
     db.session.delete(q)
     db.session.commit()
     return redirect(url_for('kveld', dinner_id=dinner_id))
@@ -652,7 +652,7 @@ COURSE_LABELS = {'forrett': 'Forrett', 'hoved': 'Hovedrett', 'dessert': 'Dessert
 def oppskrift(dinner_id, course):
     if course not in COURSE_LABELS:
         abort(404)
-    dinner = Dinner.query.get_or_404(dinner_id)
+    dinner = db.get_or_404(Dinner, dinner_id)
     recipe = Recipe.query.filter_by(dinner_id=dinner_id, course=course).first()
 
     if request.method == 'POST':
@@ -674,7 +674,7 @@ def oppskrift(dinner_id, course):
 
 @app.route('/kveld/<int:dinner_id>/handleliste')
 def handleliste(dinner_id):
-    dinner  = Dinner.query.get_or_404(dinner_id)
+    dinner  = db.get_or_404(Dinner, dinner_id)
     recipes = Recipe.query.filter_by(dinner_id=dinner_id).all()
     items   = []
     for r in recipes:
@@ -744,7 +744,7 @@ def legg_til_award():
 
 @app.route('/awards/<int:award_id>/slett', methods=['POST'])
 def slett_award(award_id):
-    a = Award.query.get_or_404(award_id)
+    a = db.get_or_404(Award, award_id)
     year = a.year
     db.session.delete(a)
     db.session.commit()
@@ -778,7 +778,7 @@ def legg_til_gjeld():
 
 @app.route('/gjeld/<int:debt_id>/gjor_opp', methods=['POST'])
 def gjor_opp_gjeld(debt_id):
-    d = HostDebt.query.get_or_404(debt_id)
+    d = db.get_or_404(HostDebt, debt_id)
     d.settled = True
     db.session.commit()
     flash('Gjeld gjort opp! 🎉', 'success')
@@ -787,7 +787,7 @@ def gjor_opp_gjeld(debt_id):
 
 @app.route('/gjeld/<int:debt_id>/slett', methods=['POST'])
 def slett_gjeld(debt_id):
-    d = HostDebt.query.get_or_404(debt_id)
+    d = db.get_or_404(HostDebt, debt_id)
     db.session.delete(d)
     db.session.commit()
     return redirect(url_for('gjeld'))
