@@ -26,7 +26,8 @@ ALLOWED_EXT   = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 app = Flask(__name__)
 app.config['SECRET_KEY']            = os.environ.get('SECRET_KEY', 'middag-hemmelig-nokkel')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(BASE_DIR, "middagsklubben.db")}'
+DB_PATH = os.environ.get('DB_PATH', os.path.join(BASE_DIR, 'middagsklubben.db'))
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH']    = 16 * 1024 * 1024   # 16 MB
 
@@ -929,4 +930,5 @@ def skann_etikett():
 # ── Run ───────────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true')
