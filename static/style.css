@@ -75,11 +75,19 @@ a:hover { text-decoration: underline; }
 .main-nav a:hover { background: var(--bg); color: var(--text); text-decoration: none; }
 .main-nav a.active { background: var(--bg); color: var(--accent); font-weight: 600; }
 
+.funny-btn {
+  background: none; border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 10px; cursor: pointer;
+  font-size: 1rem; transition: transform 0.15s, border-color 0.15s;
+  margin-left: auto;
+}
+.funny-btn:hover { border-color: #e8a020; transform: rotate(-10deg) scale(1.15); }
+.funny-btn:disabled { cursor: not-allowed; }
+
 .dark-toggle {
   background: none; border: 1px solid var(--border);
   border-radius: 6px; padding: 6px 10px; cursor: pointer;
   font-size: 1rem; transition: border-color 0.15s;
-  margin-left: auto;
 }
 .dark-toggle:hover { border-color: var(--accent); }
 

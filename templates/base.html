@@ -30,6 +30,7 @@
         <a href="{{ url_for('arsoppsummering') }}"    class="{{ 'active' if request.endpoint == 'arsoppsummering' }}">Årsoppsummering</a>
         <a href="{{ url_for('medlemmer') }}"          class="{{ 'active' if request.endpoint == 'medlemmer' }}">Medlemmer</a>
       </nav>
+      <button class="funny-btn" id="funnyBtn" title="🌭" onclick="polseRegn()">🌭</button>
       <button class="dark-toggle" id="darkToggle" title="Bytt tema" onclick="toggleDark()">🌙</button>
       <button class="hamburger" onclick="document.querySelector('.mobile-nav').classList.toggle('open')">☰</button>
     </div>
@@ -85,6 +86,54 @@
     if (document.documentElement.getAttribute('data-theme') === 'dark') {
       document.getElementById('darkToggle').textContent = '☀️';
     }
+
+    // 🌭 Pølseregn
+    function polseRegn() {
+      const btn = document.getElementById('funnyBtn');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+
+      const polser = ['🌭', '🌭', '🌭', '🥩', '🍖', '🌭'];
+      const container = document.createElement('div');
+      container.id = 'polse-container';
+      container.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden;';
+      document.body.appendChild(container);
+
+      let interval = setInterval(() => {
+        const p = document.createElement('span');
+        const emoji = polser[Math.floor(Math.random() * polser.length)];
+        const x = Math.random() * 100;
+        const size = 1.4 + Math.random() * 2;
+        const duration = 1.5 + Math.random() * 2;
+        const rotation = -30 + Math.random() * 60;
+        p.textContent = emoji;
+        p.style.cssText = `
+          position:absolute;
+          left:${x}vw;
+          top:-80px;
+          font-size:${size}rem;
+          animation: fall ${duration}s linear forwards;
+          transform: rotate(${rotation}deg);
+        `;
+        container.appendChild(p);
+        setTimeout(() => p.remove(), duration * 1000);
+      }, 80);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        setTimeout(() => container.remove(), 2500);
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }, 10000);
+    }
   </script>
+  <style>
+    @keyframes fall {
+      0%   { top: -80px; opacity: 1; }
+      90%  { opacity: 1; }
+      100% { top: 110vh; opacity: 0; }
+    }
+  </style>
 </body>
 </html>
