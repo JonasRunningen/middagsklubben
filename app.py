@@ -451,7 +451,7 @@ def sett_bruker(member_id):
 
     member.username = username
     if password:
-        member.password_hash = generate_password_hash(password)
+        member.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
     db.session.commit()
     flash(f'Bruker for {member.name} er oppdatert.', 'success')
     return redirect(url_for('medlemmer'))
