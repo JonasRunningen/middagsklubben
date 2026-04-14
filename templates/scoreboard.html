@@ -22,8 +22,8 @@
     <div class="podium-slot podium-2">
       <div class="podium-avatar">{{ top[1].member.name[0] }}</div>
       <div class="podium-name">{{ top[1].member.name }}</div>
-      <div class="podium-stars">⭐ {{ top[1].total }}</div>
-      <div class="podium-avg muted">snitt {{ top[1].avg }}</div>
+      <div class="podium-stars">⭐ {{ top[1].avg }}/5</div>
+      <div class="podium-avg muted">{{ top[1].votes }} stemmer</div>
       <div class="podium-block podium-block-2">
         <span class="podium-medal">🥈</span>
       </div>
@@ -35,8 +35,8 @@
       <div class="podium-crown">👑</div>
       <div class="podium-avatar podium-avatar-1">{{ top[0].member.name[0] }}</div>
       <div class="podium-name">{{ top[0].member.name }}</div>
-      <div class="podium-stars">⭐ {{ top[0].total }}</div>
-      <div class="podium-avg muted">snitt {{ top[0].avg }}</div>
+      <div class="podium-stars">⭐ {{ top[0].avg }}/5</div>
+      <div class="podium-avg muted">{{ top[0].votes }} stemmer</div>
       <div class="podium-block podium-block-1">
         <span class="podium-medal">🥇</span>
       </div>
@@ -47,8 +47,8 @@
     <div class="podium-slot podium-3">
       <div class="podium-avatar">{{ top[2].member.name[0] }}</div>
       <div class="podium-name">{{ top[2].member.name }}</div>
-      <div class="podium-stars">⭐ {{ top[2].total }}</div>
-      <div class="podium-avg muted">snitt {{ top[2].avg }}</div>
+      <div class="podium-stars">⭐ {{ top[2].avg }}/5</div>
+      <div class="podium-avg muted">{{ top[2].votes }} stemmer</div>
       <div class="podium-block podium-block-3">
         <span class="podium-medal">🥉</span>
       </div>
@@ -66,8 +66,8 @@
         <tr>
           <th>#</th>
           <th>Navn</th>
-          <th>Totale stjerner</th>
-          <th>Snitt per kveld</th>
+          <th>Snittpoeng</th>
+          <th>Stemmer</th>
           <th>Kvelder som vert</th>
         </tr>
       </thead>
@@ -80,9 +80,9 @@
             {{ s.member.name }}
           </td>
           <td>
-            <span class="score-total">⭐ {{ s.total }}</span>
+            <span class="score-total">⭐ {{ s.avg if s.avg > 0 else '—' }}/5</span>
           </td>
-          <td class="muted">{{ s.avg if s.avg > 0 else '—' }}</td>
+          <td class="muted">{{ s.votes if s.votes > 0 else '—' }}</td>
           <td class="muted">{{ s.hosted }}</td>
         </tr>
         {% endfor %}

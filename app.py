@@ -494,7 +494,7 @@ def scoreboard():
             'hosted': hosted,
         })
 
-    scores.sort(key=lambda x: (-x['total'], -x['avg'], x['member'].name))
+    scores.sort(key=lambda x: (-x['avg'], -x['votes'], x['member'].name))
     return render_template('scoreboard.html', scores=scores)
 
 
